@@ -1,0 +1,33 @@
+╭───────────────────────────────────────────────────╮
+│ ✻ Welcome to Claude Code!                         │
+│                                                   │
+│   /help for help, /status for your current setup  │
+│                                                   │
+│   cwd: /workspaces/cmdai                          │
+╰───────────────────────────────────────────────────╯
+
+ Tips for getting started:
+
+  Run /init to create a CLAUDE.md file with instructions for Claude
+  Use Claude to help with file analysis, editing, bash commands and git
+  Be as specific as you would with another engineer for the best results
+  ✔ Run /terminal-setup to set up terminal integration
+
+> /agents 
+  ⎿  (no content)
+
+> /agents 
+  ⎿  Agent changes:
+     Created agent: spec-driven-dev-guide
+     Created agent: rust-cli-expert
+     Created agent: llm-integration-expert
+     Created agent: macos-unix-systems-expert
+     Created agent: pragmatic-tech-lead
+     Created agent: dx-product-manager
+     Created agent: rust-cli-builder
+     Created agent: rust-production-architect
+     Created agent: tdd-rust-engineer
+     Created agent: qa-testing-expert
+     Created agent: technical-writer
+     Created agent: dev-team-coordinator
+

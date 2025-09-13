@@ -1,0 +1,19 @@
+# rustfmt configuration for cmdai project (stable features only)
+max_width = 100
+hard_tabs = false
+tab_spaces = 4
+newline_style = "Unix"
+use_small_heuristics = "Default"
+
+# Imports
+reorder_imports = true
+reorder_modules = true
+
+# Function formatting
+fn_params_layout = "Tall"
+
+# Misc
+edition = "2021"
+use_field_init_shorthand = true
+use_try_shorthand = true
+match_block_trailing_comma = false

@@ -1,0 +1,162 @@
+# Rust build artifacts
+/target/
+**/*.rs.bk
+*.pdb
+
+# Cargo lock file (optional - include for binary projects, exclude for libraries)
+# Uncomment the next line if this is a library
+# Cargo.lock
+
+# IDE and editor files
+.idea/
+*.iml
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+*.sublime-project
+*.sublime-workspace
+.nova/
+.vim/
+
+# Development environment
+.env
+.env.local
+.env.*.local
+*.env
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Desktop.ini
+
+# Temporary files
+*.tmp
+*.temp
+*.log
+*.pid
+*.seed
+*.pid.lock
+tmp/
+temp/
+
+# Debug files
+*.dSYM/
+*.su
+*.idb
+*.pdb
+
+# Test coverage
+*.profraw
+*.profdata
+coverage/
+lcov.info
+*.gcov
+*.gcda
+*.gcno
+
+# Documentation build artifacts
+/docs/build/
+/docs/_build/
+/target/doc/
+*.pdf
+
+# Model cache and data files
+.cache/
+models/
+*.bin
+*.safetensors
+*.gguf
+*.onnx
+model_cache/
+hf_cache/
+
+# MLX specific (if using Apple Silicon)
+*.mlx
+*.mlpackage
+build/
+
+# Python artifacts (for any Python scripts or tools)
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+
+# Benchmarking
+/target/criterion/
+perf.data
+perf.data.old
+flamegraph.svg
+
+# Release artifacts
+/dist/
+/release/
+*.tar.gz
+*.zip
+*.deb
+*.rpm
+*.pkg
+*.msi
+*.dmg
+
+# Conversation exports and local notes
+#2025-*.txt
+#*-conversation.txt
+#*-export.txt
+local-notes/
+
+# Security and secrets
+*.key
+*.pem
+*.crt
+*.p12
+secrets/
+private/
+
+# Backup files
+*.bak
+*.backup
+*.old
+*.orig
+
+# Core dumps
+core
+core.*
+vgcore.*
+
+# Generated documentation
+RELEASE_NOTES.md.tmp
+
+# Local configuration overrides
+config.local.toml
+settings.local.json
+*.local.yml
+
+# Development databases
+*.db
+*.sqlite
+*.sqlite3
+
+# Node modules (if any frontend components)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Terraform (if using for deployment)
+*.tfstate
+*.tfstate.*
+.terraform/
+
+# Docker (if containerizing)
+*.dockerignore.local

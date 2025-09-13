@@ -6,14 +6,14 @@ use std::time::Duration;
 // Import system components
 use cmdai::{
     cli::{CliApp, CliError},
-    safety::{SafetyValidator, SafetyConfig, ValidationError},
     models::ShellType,
+    safety::{SafetyConfig, SafetyValidator, ValidationError},
 };
 
 #[tokio::test]
 async fn test_cli_error_handling() {
     // ERROR HANDLING: CLI should handle all error scenarios gracefully
-    
+
     // Test CLI creation errors
     let cli_result = CliApp::new().await;
     match cli_result {
@@ -28,8 +28,11 @@ async fn test_cli_error_handling() {
         }
         Err(other_error) => {
             // Should have meaningful error message
-            assert!(!other_error.to_string().is_empty(), 
-                   "Error messages should not be empty: {}", other_error);
+            assert!(
+                !other_error.to_string().is_empty(),
+                "Error messages should not be empty: {}",
+                other_error
+            );
         }
     }
 }
@@ -37,11 +40,11 @@ async fn test_cli_error_handling() {
 #[tokio::test]
 async fn test_safety_validator_error_handling() {
     // ERROR HANDLING: Safety validator should handle all input gracefully
-    
+
     // Test invalid configuration
     let mut invalid_config = SafetyConfig::default();
     invalid_config.max_command_length = 0; // Invalid
-    
+
     let validator_result = SafetyValidator::new(invalid_config);
     match validator_result {
         Ok(_) => {
@@ -51,20 +54,26 @@ async fn test_safety_validator_error_handling() {
             println!("Validator not implemented yet, which is expected");
         }
         Err(ValidationError::InvalidConfig { message }) => {
-            assert!(!message.is_empty(), "Invalid config error should have message");
+            assert!(
+                !message.is_empty(),
+                "Invalid config error should have message"
+            );
             println!("Correctly rejected invalid config: {}", message);
         }
         Err(other_error) => {
-            assert!(!other_error.to_string().is_empty(), 
-                   "Error messages should be meaningful: {}", other_error);
+            assert!(
+                !other_error.to_string().is_empty(),
+                "Error messages should be meaningful: {}",
+                other_error
+            );
         }
     }
-    
+
     // Test with valid configuration
     let valid_validator = SafetyValidator::new(SafetyConfig::moderate());
     if valid_validator.is_ok() {
         let validator = valid_validator.unwrap();
-        
+
         // Test error scenarios
         let long_command = "a".repeat(10000);
         let error_test_cases = vec![
@@ -74,16 +83,19 @@ async fn test_safety_validator_error_handling() {
             ("invalid\x00utf8\x7F", "Invalid UTF-8 sequences"),
             ("command; $(malicious)", "Injection attempts"),
         ];
-        
+
         for (cmd, description) in error_test_cases {
             let result = validator.validate_command(cmd, ShellType::Bash).await;
-            
+
             match result {
                 Ok(validation) => {
                     // Should handle gracefully with appropriate risk assessment
-                    assert!(validation.confidence_score >= 0.0 && validation.confidence_score <= 1.0,
-                           "Confidence score should be valid for: {}", description);
-                    
+                    assert!(
+                        validation.confidence_score >= 0.0 && validation.confidence_score <= 1.0,
+                        "Confidence score should be valid for: {}",
+                        description
+                    );
+
                     if cmd.is_empty() {
                         assert!(validation.allowed, "Empty commands should be allowed");
                     }
@@ -94,8 +106,11 @@ async fn test_safety_validator_error_handling() {
                 }
                 Err(error) => {
                     // Should have meaningful error message
-                    assert!(!error.to_string().is_empty(),
-                           "Error should have message for: {}", description);
+                    assert!(
+                        !error.to_string().is_empty(),
+                        "Error should have message for: {}",
+                        description
+                    );
                 }
             }
         }
@@ -105,24 +120,27 @@ async fn test_safety_validator_error_handling() {
 #[tokio::test]
 async fn test_timeout_error_handling() {
     // ERROR HANDLING: System should handle timeouts gracefully
-    
+
     let validator = SafetyValidator::new(SafetyConfig::moderate());
     if validator.is_ok() {
         let v = validator.unwrap();
-        
+
         // Test with timeout
         let timeout_result = tokio::time::timeout(
             Duration::from_millis(10), // Very short timeout
-            v.validate_command("test timeout command", ShellType::Bash)
-        ).await;
-        
+            v.validate_command("test timeout command", ShellType::Bash),
+        )
+        .await;
+
         match timeout_result {
             Ok(validation_result) => {
                 // Completed within timeout
                 match validation_result {
                     Ok(_) => println!("Validation completed quickly"),
                     Err(ValidationError::NotImplemented) => println!("Expected: not implemented"),
-                    Err(error) => assert!(!error.to_string().is_empty(), "Error should have message"),
+                    Err(error) => {
+                        assert!(!error.to_string().is_empty(), "Error should have message")
+                    }
                 }
             }
             Err(_timeout_error) => {
@@ -137,15 +155,16 @@ async fn test_timeout_error_handling() {
 #[tokio::test]
 async fn test_resource_exhaustion_handling() {
     // ERROR HANDLING: System should handle resource exhaustion
-    
+
     let validator = SafetyValidator::new(SafetyConfig::moderate());
     if validator.is_ok() {
         let _v = validator.unwrap();
-        
-        // Test with many concurrent operations  
+
+        // Test with many concurrent operations
         let commands: Vec<_> = (0..100).map(|i| format!("test command {}", i)).collect();
-        let handles: Vec<_> = commands.iter().map(|cmd| {
-            async move {
+        let handles: Vec<_> = commands
+            .iter()
+            .map(|cmd| async move {
                 let validator = SafetyValidator::new(SafetyConfig::moderate());
                 if validator.is_ok() {
                     let v = validator.unwrap();
@@ -153,15 +172,15 @@ async fn test_resource_exhaustion_handling() {
                 } else {
                     Err(ValidationError::NotImplemented)
                 }
-            }
-        }).collect();
-        
+            })
+            .collect();
+
         let results = futures::future::join_all(handles).await;
-        
+
         // Should handle concurrent load without crashing
         let mut success_count = 0;
         let mut error_count = 0;
-        
+
         for result in results {
             match result {
                 Ok(_) => success_count += 1,
@@ -172,21 +191,27 @@ async fn test_resource_exhaustion_handling() {
                 Err(_) => error_count += 1,
             }
         }
-        
+
         // Should not crash under load
-        assert!(success_count + error_count == 100, "All operations should complete");
-        println!("Concurrent operations: {} success, {} errors", success_count, error_count);
+        assert!(
+            success_count + error_count == 100,
+            "All operations should complete"
+        );
+        println!(
+            "Concurrent operations: {} success, {} errors",
+            success_count, error_count
+        );
     }
 }
 
 #[tokio::test]
 async fn test_invalid_shell_type_handling() {
     // ERROR HANDLING: Should handle invalid or unsupported shell types gracefully
-    
+
     let validator = SafetyValidator::new(SafetyConfig::moderate());
     if validator.is_ok() {
         let v = validator.unwrap();
-        
+
         // Test with all supported shell types
         let shells = vec![
             ShellType::Bash,
@@ -195,21 +220,28 @@ async fn test_invalid_shell_type_handling() {
             ShellType::Sh,
             ShellType::PowerShell,
         ];
-        
+
         for shell in shells {
             let result = v.validate_command("echo test", shell).await;
-            
+
             match result {
                 Ok(validation) => {
-                    assert!(validation.allowed, "Echo should be allowed in shell: {:?}", shell);
+                    assert!(
+                        validation.allowed,
+                        "Echo should be allowed in shell: {:?}",
+                        shell
+                    );
                 }
                 Err(ValidationError::NotImplemented) => {
                     println!("Validation not implemented for shell: {:?}", shell);
                 }
                 Err(error) => {
                     // Should have meaningful error
-                    assert!(!error.to_string().is_empty(),
-                           "Error should have message for shell: {:?}", shell);
+                    assert!(
+                        !error.to_string().is_empty(),
+                        "Error should have message for shell: {:?}",
+                        shell
+                    );
                 }
             }
         }
@@ -219,11 +251,11 @@ async fn test_invalid_shell_type_handling() {
 #[tokio::test]
 async fn test_malformed_input_handling() {
     // ERROR HANDLING: Should handle malformed input without crashing
-    
+
     let validator = SafetyValidator::new(SafetyConfig::moderate());
     if validator.is_ok() {
         let v = validator.unwrap();
-        
+
         let malformed_inputs = vec![
             "command\n\nwith\r\nnewlines",
             "command\twith\ttabs",
@@ -235,23 +267,29 @@ async fn test_malformed_input_handling() {
             "command | with | pipes > and < redirects",
             "command $(with) `backticks` and $variables",
         ];
-        
+
         for input in malformed_inputs {
             let result = v.validate_command(input, ShellType::Bash).await;
-            
+
             // Should not panic or crash
             match result {
                 Ok(validation) => {
-                    assert!(validation.confidence_score >= 0.0 && validation.confidence_score <= 1.0,
-                           "Confidence should be valid for input: {}", input);
+                    assert!(
+                        validation.confidence_score >= 0.0 && validation.confidence_score <= 1.0,
+                        "Confidence should be valid for input: {}",
+                        input
+                    );
                 }
                 Err(ValidationError::NotImplemented) => {
                     // Expected during TDD
                     continue;
                 }
                 Err(error) => {
-                    assert!(!error.to_string().is_empty(),
-                           "Error should have message for input: {}", input);
+                    assert!(
+                        !error.to_string().is_empty(),
+                        "Error should have message for input: {}",
+                        input
+                    );
                 }
             }
         }
@@ -261,33 +299,41 @@ async fn test_malformed_input_handling() {
 #[tokio::test]
 async fn test_error_serialization() {
     // ERROR HANDLING: Errors should be serializable for logging
-    
+
     let test_errors = vec![
         ValidationError::NotImplemented,
-        ValidationError::InvalidConfig { 
-            message: "Test config error".to_string() 
+        ValidationError::InvalidConfig {
+            message: "Test config error".to_string(),
         },
-        ValidationError::PatternError { 
-            pattern: "invalid[regex(".to_string() 
+        ValidationError::PatternError {
+            pattern: "invalid[regex(".to_string(),
         },
         ValidationError::Timeout,
-        ValidationError::Internal { 
-            message: "Test internal error".to_string() 
+        ValidationError::Internal {
+            message: "Test internal error".to_string(),
         },
     ];
-    
+
     for error in test_errors {
         // Test serialization
         let serialized = serde_json::to_string(&error);
-        assert!(serialized.is_ok(), "Error should be serializable: {:?}", error);
-        
+        assert!(
+            serialized.is_ok(),
+            "Error should be serializable: {:?}",
+            error
+        );
+
         if serialized.is_ok() {
             let json = serialized.unwrap();
             assert!(!json.is_empty(), "Serialized error should not be empty");
-            
+
             // Test deserialization
             let deserialized: Result<ValidationError, _> = serde_json::from_str(&json);
-            assert!(deserialized.is_ok(), "Error should be deserializable: {}", json);
+            assert!(
+                deserialized.is_ok(),
+                "Error should be deserializable: {}",
+                json
+            );
         }
     }
 }
@@ -295,16 +341,16 @@ async fn test_error_serialization() {
 #[tokio::test]
 async fn test_graceful_degradation() {
     // ERROR HANDLING: System should degrade gracefully when components fail
-    
+
     // Test partial system functionality
     let validator_result = SafetyValidator::new(SafetyConfig::moderate());
     let cli_result = CliApp::new().await;
-    
+
     // At least one component should provide useful error information
     let mut has_useful_error = false;
     let validator_ok = validator_result.is_ok();
     let cli_ok = cli_result.is_ok();
-    
+
     if validator_result.is_err() {
         let error = validator_result.unwrap_err();
         if !error.to_string().is_empty() {
@@ -312,7 +358,7 @@ async fn test_graceful_degradation() {
             println!("Validator error: {}", error);
         }
     }
-    
+
     if cli_result.is_err() {
         let error = cli_result.unwrap_err();
         if !error.to_string().is_empty() {
@@ -320,32 +366,40 @@ async fn test_graceful_degradation() {
             println!("CLI error: {}", error);
         }
     }
-    
+
     // During TDD, NotImplemented errors are expected and useful
-    assert!(has_useful_error || validator_ok || cli_ok,
-           "System should provide useful error information or work partially");
+    assert!(
+        has_useful_error || validator_ok || cli_ok,
+        "System should provide useful error information or work partially"
+    );
 }
 
 #[tokio::test]
 async fn test_error_context_preservation() {
     // ERROR HANDLING: Error context should be preserved through call stack
-    
+
     let validator = SafetyValidator::new(SafetyConfig::moderate());
     if validator.is_ok() {
         let v = validator.unwrap();
-        
+
         // Test command that might trigger various error paths
         let problematic_command = "rm -rf $(find / -name '*.important' 2>/dev/null)";
-        let result = v.validate_command(problematic_command, ShellType::Bash).await;
-        
+        let result = v
+            .validate_command(problematic_command, ShellType::Bash)
+            .await;
+
         match result {
             Ok(validation) => {
                 // Should provide context about why this is dangerous
                 if !validation.allowed {
-                    assert!(!validation.explanation.is_empty(),
-                           "Dangerous command explanation should not be empty");
-                    assert!(!validation.matched_patterns.is_empty(),
-                           "Should identify which patterns matched");
+                    assert!(
+                        !validation.explanation.is_empty(),
+                        "Dangerous command explanation should not be empty"
+                    );
+                    assert!(
+                        !validation.matched_patterns.is_empty(),
+                        "Should identify which patterns matched"
+                    );
                 }
             }
             Err(ValidationError::NotImplemented) => {
@@ -365,11 +419,11 @@ async fn test_error_context_preservation() {
 #[tokio::test]
 async fn test_recovery_from_errors() {
     // ERROR HANDLING: System should recover from errors and continue functioning
-    
+
     let validator = SafetyValidator::new(SafetyConfig::moderate());
     if validator.is_ok() {
         let v = validator.unwrap();
-        
+
         // Test sequence: error -> recovery -> normal operation
         let test_sequence = vec![
             ("", "empty command"),
@@ -377,12 +431,12 @@ async fn test_recovery_from_errors() {
             ("\x00invalid", "another error"),
             ("echo hello", "should still work"),
         ];
-        
+
         let mut successful_operations = 0;
-        
+
         for (cmd, description) in &test_sequence {
             let result = v.validate_command(cmd, ShellType::Bash).await;
-            
+
             match result {
                 Ok(_) => {
                     successful_operations += 1;
@@ -398,9 +452,11 @@ async fn test_recovery_from_errors() {
                 }
             }
         }
-        
+
         // System should either work consistently or be consistently not implemented
-        assert!(successful_operations == test_sequence.len() || successful_operations == 0,
-               "System should be consistent in its implementation state");
+        assert!(
+            successful_operations == test_sequence.len() || successful_operations == 0,
+            "System should be consistent in its implementation state"
+        );
     }
 }

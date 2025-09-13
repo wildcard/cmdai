@@ -3,7 +3,7 @@
 
 use serde::{Deserialize, Serialize};
 
-use crate::models::{ShellType, SafetyLevel};
+use crate::models::{SafetyLevel, ShellType};
 
 /// Main CLI application struct
 #[derive(Debug)]

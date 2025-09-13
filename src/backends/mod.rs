@@ -15,13 +15,13 @@ pub trait CommandGenerator: Send + Sync {
         &self,
         request: &CommandRequest,
     ) -> Result<GeneratedCommand, GeneratorError>;
-    
+
     /// Check if this backend is currently available for use
     async fn is_available(&self) -> bool;
-    
+
     /// Get information about this backend's capabilities and performance
     fn backend_info(&self) -> BackendInfo;
-    
+
     /// Perform any necessary cleanup when shutting down
     async fn shutdown(&self) -> Result<(), GeneratorError>;
 }
@@ -43,22 +43,22 @@ pub struct BackendInfo {
 pub enum GeneratorError {
     #[error("Backend is not available: {reason}")]
     BackendUnavailable { reason: String },
-    
+
     #[error("Request timeout after {timeout:?}")]
     Timeout { timeout: Duration },
-    
+
     #[error("Invalid request: {message}")]
     InvalidRequest { message: String },
-    
+
     #[error("Model generation failed: {details}")]
     GenerationFailed { details: String },
-    
+
     #[error("Response parsing failed: {content}")]
     ParseError { content: String },
-    
+
     #[error("Configuration error: {message}")]
     ConfigError { message: String },
-    
+
     #[error("Internal error: {message}")]
     Internal { message: String },
 }

@@ -70,6 +70,10 @@ proptest = "1"
 criterion = { version = "0.5", features = ["html_reports"] }
 futures = "0.3"
 
+[[bench]]
+name = "performance"
+harness = false
+
 [features]
 default = []
 mlx = ["cxx"]

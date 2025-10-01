@@ -178,7 +178,7 @@ impl SafetyValidator {
         // Check against built-in compiled patterns (fast!)
         for (regex, risk_level, description, _) in built_in_patterns {
             if Self::is_dangerous_in_context(command, regex) {
-                matched.push(description.clone());
+                matched.push(description.to_lowercase()); // Normalize for matching
                 if *risk_level > highest_risk {
                     highest_risk = *risk_level;
                 }
@@ -189,7 +189,7 @@ impl SafetyValidator {
         // Check pre-compiled custom patterns
         for (regex, risk_level, description) in &self.compiled_patterns {
             if Self::is_dangerous_in_context(command, regex) {
-                matched.push(description.clone());
+                matched.push(description.to_lowercase()); // Normalize for matching
                 if *risk_level > highest_risk {
                     highest_risk = *risk_level;
                 }

@@ -238,6 +238,33 @@ pub static DANGEROUS_PATTERNS: Lazy<Vec<DangerPattern>> = Lazy::new(|| {
             description: "Add malicious cron job".to_string(),
             shell_specific: None,
         },
+        // HIGH: Python/Perl exec with dangerous commands
+        DangerPattern {
+            pattern: r"python\s+-c\s+.*os\.system.*rm\s+-rf".to_string(),
+            risk_level: RiskLevel::Critical,
+            description: "Python executing recursive deletion".to_string(),
+            shell_specific: None,
+        },
+        DangerPattern {
+            pattern: r"(python|perl|ruby)\s+-[ec]\s+.*system\s*\(".to_string(),
+            risk_level: RiskLevel::High,
+            description: "Script language executing shell commands".to_string(),
+            shell_specific: None,
+        },
+        // MODERATE: rm without -rf but still potentially dangerous
+        DangerPattern {
+            pattern: r"rm\s+[^-\s][^\s]*\.(txt|doc|pdf|xlsx|pptx|zip|tar|sql|bak)".to_string(),
+            risk_level: RiskLevel::Moderate,
+            description: "Deleting important file types".to_string(),
+            shell_specific: None,
+        },
+        // Fix Windows backslash pattern
+        DangerPattern {
+            pattern: r"rm\s+-r[f]*\s+[A-Z]:[/\\]".to_string(),
+            risk_level: RiskLevel::Critical,
+            description: "Recursive deletion of Windows drive root (with backslash)".to_string(),
+            shell_specific: Some(ShellType::Bash),
+        },
     ]
 });
 
@@ -272,6 +299,36 @@ pub fn get_patterns_by_risk(min_risk: RiskLevel) -> Vec<&'static DangerPattern> 
     DANGEROUS_PATTERNS
         .iter()
         .filter(|p| p.risk_level >= min_risk)
+        .collect()
+}
+
+/// Compiled regex patterns for performance (cached at startup)
+pub static COMPILED_PATTERNS: Lazy<Vec<(Regex, RiskLevel, String, Option<ShellType>)>> =
+    Lazy::new(|| {
+        DANGEROUS_PATTERNS
+            .iter()
+            .filter_map(|pattern| {
+                Regex::new(&pattern.pattern).ok().map(|regex| {
+                    (
+                        regex,
+                        pattern.risk_level,
+                        pattern.description.clone(),
+                        pattern.shell_specific,
+                    )
+                })
+            })
+            .collect()
+    });
+
+/// Get compiled patterns for a specific shell type
+pub fn get_compiled_patterns_for_shell(
+    shell: ShellType,
+) -> Vec<&'static (Regex, RiskLevel, String, Option<ShellType>)> {
+    COMPILED_PATTERNS
+        .iter()
+        .filter(|(_, _, _, shell_specific)| {
+            shell_specific.is_none() || *shell_specific == Some(shell)
+        })
         .collect()
 }
 

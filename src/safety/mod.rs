@@ -7,13 +7,18 @@ use serde::{Deserialize, Serialize};
 
 use crate::models::{RiskLevel, SafetyLevel, ShellType};
 
-pub use patterns::{get_patterns_by_risk, get_patterns_for_shell, validate_patterns};
+pub use patterns::{
+    get_compiled_patterns_for_shell, get_patterns_by_risk, get_patterns_for_shell,
+    validate_patterns,
+};
 
 /// Main safety validator for analyzing command safety
 #[derive(Debug)]
 pub struct SafetyValidator {
     config: SafetyConfig,
     patterns: Vec<DangerPattern>,
+    // Cached compiled regex patterns for performance
+    compiled_patterns: Vec<(regex::Regex, RiskLevel, String)>,
 }
 
 /// Configuration for safety validation behavior
@@ -64,10 +69,32 @@ impl SafetyValidator {
             }
         }
 
-        // Load built-in patterns (will be implemented in T012)
+        // Pre-compile all custom patterns for performance
+        let mut compiled_patterns = Vec::new();
+        for pattern in &config.custom_patterns {
+            match regex::Regex::new(&pattern.pattern) {
+                Ok(regex) => {
+                    compiled_patterns.push((
+                        regex,
+                        pattern.risk_level,
+                        pattern.description.clone(),
+                    ));
+                }
+                Err(e) => {
+                    return Err(ValidationError::PatternError {
+                        pattern: format!("{}: {}", pattern.pattern, e),
+                    });
+                }
+            }
+        }
+
         let patterns = config.custom_patterns.clone();
 
-        Ok(Self { config, patterns })
+        Ok(Self {
+            config,
+            patterns,
+            compiled_patterns,
+        })
     }
 
     /// Check if command contains dangerous pattern in executable context
@@ -142,53 +169,39 @@ impl SafetyValidator {
             }
         }
 
-        // Get patterns for this shell type
-        let patterns = patterns::get_patterns_for_shell(shell);
+        // Get pre-compiled patterns for this shell type
+        let built_in_patterns = patterns::get_compiled_patterns_for_shell(shell);
         let mut matched = Vec::new();
         let mut highest_risk = RiskLevel::Safe;
         let mut warnings = Vec::new();
 
-        // Check against dangerous patterns
-        for pattern in &patterns {
-            if let Ok(regex) = regex::Regex::new(&pattern.pattern) {
-                if Self::is_dangerous_in_context(command, &regex) {
-                    matched.push(pattern.description.clone());
-                    if pattern.risk_level > highest_risk {
-                        highest_risk = pattern.risk_level;
-                    }
-                    warnings.push(format!(
-                        "{}: {}",
-                        pattern.risk_level, pattern.description
-                    ));
+        // Check against built-in compiled patterns (fast!)
+        for (regex, risk_level, description, _) in built_in_patterns {
+            if Self::is_dangerous_in_context(command, regex) {
+                matched.push(description.clone());
+                if *risk_level > highest_risk {
+                    highest_risk = *risk_level;
                 }
+                warnings.push(format!("{}: {}", risk_level, description));
             }
         }
 
-        // Check custom patterns
-        for pattern in &self.patterns {
-            // Skip if shell-specific and doesn't match
-            if let Some(pattern_shell) = pattern.shell_specific {
-                if pattern_shell != shell {
-                    continue;
+        // Check pre-compiled custom patterns
+        for (regex, risk_level, description) in &self.compiled_patterns {
+            if Self::is_dangerous_in_context(command, regex) {
+                matched.push(description.clone());
+                if *risk_level > highest_risk {
+                    highest_risk = *risk_level;
                 }
-            }
-
-            if let Ok(regex) = regex::Regex::new(&pattern.pattern) {
-                if Self::is_dangerous_in_context(command, &regex) {
-                    matched.push(pattern.description.clone());
-                    if pattern.risk_level > highest_risk {
-                        highest_risk = pattern.risk_level;
-                    }
-                    warnings.push(format!(
-                        "{}: {}",
-                        pattern.risk_level, pattern.description
-                    ));
-                }
+                warnings.push(format!("{}: {}", risk_level, description));
             }
         }
 
         // Determine if command is allowed based on safety level
-        let allowed = !highest_risk.is_blocked(self.config.safety_level);
+        // Commands are not allowed if either blocked OR require confirmation
+        let requires_confirm = highest_risk.requires_confirmation(self.config.safety_level);
+        let is_blocked = highest_risk.is_blocked(self.config.safety_level);
+        let allowed = !is_blocked && !requires_confirm;
 
         // Generate explanation
         let explanation = if matched.is_empty() {

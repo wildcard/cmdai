@@ -1,9 +1,13 @@
 // Safety module - Command safety validation and risk assessment
 // These are placeholder stubs - tests should fail until proper implementation
 
+mod patterns;
+
 use serde::{Deserialize, Serialize};
 
 use crate::models::{RiskLevel, SafetyLevel, ShellType};
+
+pub use patterns::{get_patterns_by_risk, get_patterns_for_shell, validate_patterns};
 
 /// Main safety validator for analyzing command safety
 #[derive(Debug)]

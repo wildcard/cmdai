@@ -284,6 +284,26 @@ pub static DANGEROUS_PATTERNS: Lazy<Vec<DangerPattern>> = Lazy::new(|| {
             description: "Changing file ownership".to_string(),
             shell_specific: None,
         },
+        // MODERATE: Installing packages with user scope
+        DangerPattern {
+            pattern: r"pip\s+install\s+--user".to_string(),
+            risk_level: RiskLevel::Moderate,
+            description: "Installing Python packages in user directory".to_string(),
+            shell_specific: None,
+        },
+        // CRITICAL: Windows del command with dangerous flags
+        DangerPattern {
+            pattern: r"del\s+/[fFsS]\s+".to_string(),
+            risk_level: RiskLevel::Critical,
+            description: "Windows delete with force/subdirectory flags".to_string(),
+            shell_specific: None, // Works in both Cmd and PowerShell
+        },
+        DangerPattern {
+            pattern: r"del\s+.*C:[/\\]".to_string(),
+            risk_level: RiskLevel::Critical,
+            description: "Windows delete on C drive root".to_string(),
+            shell_specific: None, // Works in both Cmd and PowerShell
+        },
     ]
 });
 

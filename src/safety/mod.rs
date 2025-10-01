@@ -73,21 +73,134 @@ impl SafetyValidator {
     /// Validate a single command for safety
     pub async fn validate_command(
         &self,
-        _command: &str,
-        _shell: ShellType,
+        command: &str,
+        shell: ShellType,
     ) -> Result<ValidationResult, ValidationError> {
-        // Placeholder - will be implemented later
-        Err(ValidationError::NotImplemented)
+        // Check command length
+        if command.len() > self.config.max_command_length {
+            return Ok(ValidationResult {
+                allowed: false,
+                risk_level: RiskLevel::Moderate,
+                explanation: format!(
+                    "Command exceeds maximum length of {} characters",
+                    self.config.max_command_length
+                ),
+                warnings: vec![format!(
+                    "Command is {} characters long (max: {})",
+                    command.len(),
+                    self.config.max_command_length
+                )],
+                matched_patterns: vec![],
+                confidence_score: 1.0,
+            });
+        }
+
+        // Check allowlist patterns first
+        for allow_pattern in &self.config.allowlist_patterns {
+            if let Ok(regex) = regex::Regex::new(allow_pattern) {
+                if regex.is_match(command) {
+                    return Ok(ValidationResult {
+                        allowed: true,
+                        risk_level: RiskLevel::Safe,
+                        explanation: "Command matches allowlist pattern".to_string(),
+                        warnings: vec![],
+                        matched_patterns: vec![allow_pattern.clone()],
+                        confidence_score: 1.0,
+                    });
+                }
+            }
+        }
+
+        // Get patterns for this shell type
+        let patterns = patterns::get_patterns_for_shell(shell);
+        let mut matched = Vec::new();
+        let mut highest_risk = RiskLevel::Safe;
+        let mut warnings = Vec::new();
+
+        // Check against dangerous patterns
+        for pattern in &patterns {
+            if let Ok(regex) = regex::Regex::new(&pattern.pattern) {
+                if regex.is_match(command) {
+                    matched.push(pattern.description.clone());
+                    if pattern.risk_level > highest_risk {
+                        highest_risk = pattern.risk_level;
+                    }
+                    warnings.push(format!(
+                        "{}: {}",
+                        pattern.risk_level, pattern.description
+                    ));
+                }
+            }
+        }
+
+        // Check custom patterns
+        for pattern in &self.patterns {
+            // Skip if shell-specific and doesn't match
+            if let Some(pattern_shell) = pattern.shell_specific {
+                if pattern_shell != shell {
+                    continue;
+                }
+            }
+
+            if let Ok(regex) = regex::Regex::new(&pattern.pattern) {
+                if regex.is_match(command) {
+                    matched.push(pattern.description.clone());
+                    if pattern.risk_level > highest_risk {
+                        highest_risk = pattern.risk_level;
+                    }
+                    warnings.push(format!(
+                        "{}: {}",
+                        pattern.risk_level, pattern.description
+                    ));
+                }
+            }
+        }
+
+        // Determine if command is allowed based on safety level
+        let allowed = !highest_risk.is_blocked(self.config.safety_level);
+
+        // Generate explanation
+        let explanation = if matched.is_empty() {
+            "No dangerous patterns detected".to_string()
+        } else {
+            format!(
+                "Detected {} dangerous pattern(s) at {} risk level",
+                matched.len(),
+                highest_risk
+            )
+        };
+
+        // Calculate confidence score based on pattern matches
+        let confidence_score = if matched.is_empty() {
+            0.95 // High confidence for safe commands
+        } else {
+            1.0 // Very confident about dangerous patterns
+        };
+
+        Ok(ValidationResult {
+            allowed,
+            risk_level: highest_risk,
+            explanation,
+            warnings,
+            matched_patterns: matched,
+            confidence_score,
+        })
     }
 
     /// Validate multiple commands efficiently
     pub async fn validate_batch(
         &self,
-        _commands: &[String],
-        _shell: ShellType,
+        commands: &[String],
+        shell: ShellType,
     ) -> Result<Vec<ValidationResult>, ValidationError> {
-        // Placeholder - will be implemented later
-        Err(ValidationError::NotImplemented)
+        let mut results = Vec::with_capacity(commands.len());
+
+        for command in commands {
+            let result = self.validate_command(command, shell).await?;
+            results.push(result);
+        }
+
+        Ok(results)
     }
 }
 

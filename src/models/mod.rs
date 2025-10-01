@@ -64,16 +64,51 @@ impl CommandRequest {
     }
 }
 
+/// Response from command generation with metadata
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GeneratedCommand {
+    /// The generated shell command
     pub command: String,
+
+    /// Human-readable explanation of what the command does
     pub explanation: String,
+
+    /// Assessed risk level of the command
     pub safety_level: RiskLevel,
-    pub estimated_impact: Impact,
+
+    /// Description of estimated impact
+    pub estimated_impact: String,
+
+    /// Alternative commands that could achieve similar results
     pub alternatives: Vec<String>,
+
+    /// Name of the backend that generated this command
     pub backend_used: String,
+
+    /// Time taken to generate the command in milliseconds
     pub generation_time_ms: u64,
-    pub confidence_score: f32,
+
+    /// Confidence score (0.0 to 1.0)
+    pub confidence_score: f64,
+}
+
+impl GeneratedCommand {
+    /// Validate that the generated command is well-formed
+    pub fn validate(&self) -> Result<(), String> {
+        if self.command.is_empty() {
+            return Err("Command cannot be empty".to_string());
+        }
+        if self.explanation.is_empty() {
+            return Err("Explanation cannot be empty".to_string());
+        }
+        if !(0.0..=1.0).contains(&self.confidence_score) {
+            return Err(format!(
+                "Confidence score must be between 0.0 and 1.0, got {}",
+                self.confidence_score
+            ));
+        }
+        Ok(())
+    }
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
@@ -282,9 +317,4 @@ impl std::fmt::Display for ShellType {
     }
 }
 
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
-pub struct Impact {
-    // Placeholder - will be properly defined later
-}
-
-// Types are already public, no re-export needed
+// All types are public through mod.rs exports

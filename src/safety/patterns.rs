@@ -304,6 +304,40 @@ pub static DANGEROUS_PATTERNS: Lazy<Vec<DangerPattern>> = Lazy::new(|| {
             description: "Windows delete on C drive root".to_string(),
             shell_specific: None, // Works in both Cmd and PowerShell
         },
+        // CRITICAL: Windows format command
+        DangerPattern {
+            pattern: r"format\s+[A-Z]:".to_string(),
+            risk_level: RiskLevel::Critical,
+            description: "Format disk drive".to_string(),
+            shell_specific: None,
+        },
+        // MODERATE: Docker privileged mode
+        DangerPattern {
+            pattern: r"docker\s+run\s+.*--privileged".to_string(),
+            risk_level: RiskLevel::High,
+            description: "Docker container with full host access".to_string(),
+            shell_specific: None,
+        },
+        // MODERATE: Remote access commands
+        DangerPattern {
+            pattern: r"ssh\s+[^\s]+@[^\s]+".to_string(),
+            risk_level: RiskLevel::Moderate,
+            description: "SSH connection to remote server".to_string(),
+            shell_specific: None,
+        },
+        DangerPattern {
+            pattern: r"scp\s+".to_string(),
+            risk_level: RiskLevel::Moderate,
+            description: "Secure copy to/from remote server".to_string(),
+            shell_specific: None,
+        },
+        // MODERATE: Force kill specific process
+        DangerPattern {
+            pattern: r"kill\s+-9\s+\d+".to_string(),
+            risk_level: RiskLevel::Moderate,
+            description: "Force kill specific process by PID".to_string(),
+            shell_specific: None,
+        },
     ]
 });
 

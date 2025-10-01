@@ -106,12 +106,42 @@ impl std::fmt::Display for SafetyLevel {
     }
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
 pub enum BackendType {
-    MLX,
-    VLLM,
+    /// Mock backend for testing
+    Mock,
+    /// Ollama local LLM backend
     Ollama,
-    OpenAI,
+    /// vLLM HTTP API backend
+    VLlm,
+    /// Apple Silicon MLX backend
+    Mlx,
+}
+
+impl std::str::FromStr for BackendType {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "mock" => Ok(Self::Mock),
+            "ollama" => Ok(Self::Ollama),
+            "vllm" => Ok(Self::VLlm),
+            "mlx" => Ok(Self::Mlx),
+            _ => Err(format!("Unknown backend type: {}", s)),
+        }
+    }
+}
+
+impl std::fmt::Display for BackendType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Mock => write!(f, "mock"),
+            Self::Ollama => write!(f, "ollama"),
+            Self::VLlm => write!(f, "vllm"),
+            Self::Mlx => write!(f, "mlx"),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]

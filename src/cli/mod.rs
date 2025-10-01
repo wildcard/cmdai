@@ -8,6 +8,7 @@ use crate::models::{SafetyLevel, ShellType};
 /// Main CLI application struct
 #[derive(Debug)]
 pub struct CliApp {
+    #[allow(dead_code)] // Will be used in Module D (CLI Interface) implementation
     config: CliConfig,
 }
 

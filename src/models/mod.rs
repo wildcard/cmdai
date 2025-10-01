@@ -26,11 +26,44 @@ pub struct GeneratedCommand {
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
+#[serde(rename_all = "lowercase")]
 pub enum RiskLevel {
     Safe,
     Moderate,
     High,
     Critical,
+}
+
+impl RiskLevel {
+    /// Check if this risk level requires user confirmation at the given safety level
+    pub fn requires_confirmation(&self, safety_level: SafetyLevel) -> bool {
+        match safety_level {
+            SafetyLevel::Strict => matches!(self, Self::Moderate | Self::High | Self::Critical),
+            SafetyLevel::Moderate => matches!(self, Self::High | Self::Critical),
+            SafetyLevel::Permissive => matches!(self, Self::Critical),
+        }
+    }
+
+    /// Check if this risk level should be blocked at the given safety level
+    pub fn is_blocked(&self, safety_level: SafetyLevel) -> bool {
+        match safety_level {
+            SafetyLevel::Strict => matches!(self, Self::High | Self::Critical),
+            SafetyLevel::Moderate => matches!(self, Self::Critical),
+            SafetyLevel::Permissive => false,
+        }
+    }
+}
+
+impl std::fmt::Display for RiskLevel {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        use colored::Colorize;
+        match self {
+            Self::Safe => write!(f, "{}", "Safe".green()),
+            Self::Moderate => write!(f, "{}", "Moderate".yellow()),
+            Self::High => write!(f, "{}", "High".bright_red()),
+            Self::Critical => write!(f, "{}", "Critical".red().bold()),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]

@@ -111,6 +111,32 @@ impl GeneratedCommand {
     }
 }
 
+impl std::fmt::Display for GeneratedCommand {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        use colored::Colorize;
+
+        writeln!(f, "{}", "Generated Command:".bold())?;
+        writeln!(f, "  {}", self.command.bright_cyan().bold())?;
+        writeln!(f)?;
+        writeln!(f, "{}", "Explanation:".bold())?;
+        writeln!(f, "  {}", self.explanation)?;
+        writeln!(f)?;
+        writeln!(f, "{} {}", "Risk Level:".bold(), self.safety_level)?;
+        writeln!(f, "{} {}", "Backend:".bold(), self.backend_used)?;
+        writeln!(f, "{} {:.0}%", "Confidence:".bold(), self.confidence_score * 100.0)?;
+
+        if !self.alternatives.is_empty() {
+            writeln!(f)?;
+            writeln!(f, "{}", "Alternatives:".bold())?;
+            for alt in &self.alternatives {
+                writeln!(f, "  • {}", alt.dimmed())?;
+            }
+        }
+
+        Ok(())
+    }
+}
+
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
 #[serde(rename_all = "lowercase")]
 pub enum RiskLevel {

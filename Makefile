@@ -3,15 +3,28 @@
 # Default target
 help:
 	@echo "Available targets:"
-	@echo "  build     - Build the project in debug mode"
-	@echo "  release   - Build optimized release binary"
-	@echo "  test      - Run all tests"
-	@echo "  clean     - Clean build artifacts"
+	@echo "Build Commands:"
+	@echo "  build          - Build the project in debug mode"
+	@echo "  release        - Build optimized release binary"
+	@echo "Test Commands (Clean Output):"
+	@echo "  test           - Run all tests quietly (default)"
+	@echo "  test-verbose   - Run all tests with verbose output"
+	@echo "  test-quiet     - Run tests with minimal output"
+	@echo "  test-show-output - Run tests showing stdout/stderr"
+	@echo "  test-nextest   - Run tests with nextest (if installed)"
+	@echo "  test-watch     - Watch for changes and run tests"
+	@echo "Test Suites:"
+	@echo "  test-contract  - Run contract tests only"
+	@echo "  test-integration - Run integration tests only"
+	@echo "  test-property  - Run property-based tests only"
+	@echo "Quality Checks:"
 	@echo "  fmt       - Format code with rustfmt"
 	@echo "  lint      - Run clippy lints"
 	@echo "  audit     - Run security audit"
-	@echo "  check     - Run all quality checks (fmt, lint, audit, test)"
+	@echo "  check     - Run all quality checks"
+	@echo "Other:"
 	@echo "  bench     - Run benchmarks"
+	@echo "  clean     - Clean build artifacts"
 	@echo "  install   - Install cmdai locally"
 
 # Build commands
@@ -21,18 +34,59 @@ build:
 release:
 	cargo build --release
 
-# Test commands
+# Test commands with cleaner output
 test:
-	cargo test --verbose
+	RUST_LOG=warn cargo test -q --all-features
 
+test-verbose:
+	RUST_LOG=debug cargo test --verbose --all-features
+
+test-quiet:
+	RUST_LOG=error cargo test -q --all-features -- --quiet
+
+test-show-output:
+	RUST_LOG=warn cargo test --all-features -- --nocapture
+
+# Specific test suites
 test-contract:
-	cargo test --test "*contract*" --verbose
+	RUST_LOG=warn cargo test --test "backend_trait_contract" --test "safety_validator_contract" --test "cli_interface_contract" -q
 
 test-integration:
-	cargo test --test "*integration*" --verbose
+	RUST_LOG=warn cargo test --test "integration_tests" -q
 
 test-property:
-	cargo test --test "*property*" --verbose
+	RUST_LOG=warn cargo test --test "property_tests" -q
+
+test-error-handling:
+	RUST_LOG=warn cargo test --test "error_handling_tests" -q
+
+test-performance:
+	RUST_LOG=warn cargo test --test "performance_tests" -q
+
+# Nextest commands (cleaner output)
+test-nextest:
+	@command -v cargo-nextest >/dev/null 2>&1 && { \
+		RUST_LOG=warn cargo nextest run --all-features; \
+	} || { \
+		echo "cargo-nextest not found, using standard test"; \
+		make test; \
+	}
+
+test-nextest-verbose:
+	@command -v cargo-nextest >/dev/null 2>&1 && { \
+		RUST_LOG=debug cargo nextest run --all-features --profile verbose; \
+	} || { \
+		echo "cargo-nextest not found, using verbose test"; \
+		make test-verbose; \
+	}
+
+# Watch mode for continuous testing
+test-watch:
+	@command -v cargo-watch >/dev/null 2>&1 && { \
+		RUST_LOG=warn cargo watch -x "test -q --all-features"; \
+	} || { \
+		echo "cargo-watch not found. Install with: cargo install cargo-watch"; \
+	}
 
 # Code quality
 fmt:

@@ -9,6 +9,7 @@ use crate::models::{RiskLevel, SafetyLevel, ShellType};
 #[derive(Debug)]
 pub struct SafetyValidator {
     config: SafetyConfig,
+    patterns: Vec<DangerPattern>,
 }
 
 /// Configuration for safety validation behavior
@@ -42,9 +43,27 @@ pub struct DangerPattern {
 
 impl SafetyValidator {
     /// Create new validator with given configuration
-    pub fn new(_config: SafetyConfig) -> Result<Self, ValidationError> {
-        // Placeholder - will be implemented later
-        Err(ValidationError::NotImplemented)
+    pub fn new(config: SafetyConfig) -> Result<Self, ValidationError> {
+        // Validate configuration
+        if config.max_command_length == 0 {
+            return Err(ValidationError::InvalidConfig {
+                message: "max_command_length must be positive".to_string(),
+            });
+        }
+
+        // Validate custom patterns can compile
+        for pattern in &config.custom_patterns {
+            if let Err(e) = regex::Regex::new(&pattern.pattern) {
+                return Err(ValidationError::PatternError {
+                    pattern: format!("{}: {}", pattern.pattern, e),
+                });
+            }
+        }
+
+        // Load built-in patterns (will be implemented in T012)
+        let patterns = config.custom_patterns.clone();
+
+        Ok(Self { config, patterns })
     }
 
     /// Validate a single command for safety
@@ -69,34 +88,50 @@ impl SafetyValidator {
 }
 
 impl SafetyConfig {
-    /// Create strict safety configuration
+    /// Create strict safety configuration (blocks High and Critical)
     pub fn strict() -> Self {
-        // Placeholder - will be implemented later
-        Self::default()
+        Self {
+            safety_level: SafetyLevel::Strict,
+            max_command_length: 1000,
+            custom_patterns: Vec::new(),
+            allowlist_patterns: Vec::new(),
+        }
     }
 
-    /// Create moderate safety configuration
+    /// Create moderate safety configuration (blocks Critical only)
     pub fn moderate() -> Self {
-        // Placeholder - will be implemented later
-        Self::default()
+        Self {
+            safety_level: SafetyLevel::Moderate,
+            max_command_length: 5000,
+            custom_patterns: Vec::new(),
+            allowlist_patterns: Vec::new(),
+        }
     }
 
-    /// Create permissive safety configuration
+    /// Create permissive safety configuration (warns but allows all)
     pub fn permissive() -> Self {
-        // Placeholder - will be implemented later
-        Self::default()
+        Self {
+            safety_level: SafetyLevel::Permissive,
+            max_command_length: 10000,
+            custom_patterns: Vec::new(),
+            allowlist_patterns: Vec::new(),
+        }
     }
 
-    /// Add custom dangerous pattern
-    pub fn add_custom_pattern(&mut self, pattern: DangerPattern) {
-        // Placeholder - will be implemented later
+    /// Add custom dangerous pattern with validation
+    pub fn add_custom_pattern(&mut self, pattern: DangerPattern) -> Result<(), ValidationError> {
+        // Validate regex compiles
+        regex::Regex::new(&pattern.pattern).map_err(|e| ValidationError::PatternError {
+            pattern: format!("{}: {}", pattern.pattern, e),
+        })?;
+
         self.custom_patterns.push(pattern);
+        Ok(())
     }
 
     /// Add allowlist pattern
-    pub fn add_allowlist_pattern(&mut self, pattern: &str) {
-        // Placeholder - will be implemented later
-        self.allowlist_patterns.push(pattern.to_string());
+    pub fn add_allowlist_pattern(&mut self, pattern: impl Into<String>) {
+        self.allowlist_patterns.push(pattern.into());
     }
 }
 

@@ -3,14 +3,65 @@
 
 use serde::{Deserialize, Serialize};
 
-// Placeholder types for contract tests - will be properly implemented later
+/// Request for command generation from natural language
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CommandRequest {
+    /// Natural language description of desired command
     pub input: String,
-    pub context: Option<String>,
+
+    /// Target shell type for command generation
     pub shell: ShellType,
+
+    /// User's safety preference level
     pub safety_level: SafetyLevel,
+
+    /// Optional additional context (current directory, environment info)
+    pub context: Option<String>,
+
+    /// Optional backend preference
     pub backend_preference: Option<String>,
+}
+
+impl CommandRequest {
+    /// Create a new command request with the given input and shell type
+    pub fn new(input: impl Into<String>, shell: ShellType) -> Self {
+        let input = input.into();
+        let trimmed = input.trim().to_string();
+
+        Self {
+            input: trimmed,
+            shell,
+            safety_level: SafetyLevel::default(),
+            context: None,
+            backend_preference: None,
+        }
+    }
+
+    /// Set the safety level (builder pattern)
+    pub fn with_safety(mut self, level: SafetyLevel) -> Self {
+        self.safety_level = level;
+        self
+    }
+
+    /// Set the context (builder pattern)
+    pub fn with_context(mut self, ctx: impl Into<String>) -> Self {
+        self.context = Some(ctx.into());
+        self
+    }
+
+    /// Set the backend preference (builder pattern)
+    pub fn with_backend(mut self, backend: impl Into<String>) -> Self {
+        self.backend_preference = Some(backend.into());
+        self
+    }
+
+    /// Validate that the request is well-formed
+    pub fn validate(&self) -> Result<(), String> {
+        if self.input.is_empty() {
+            return Err("Input cannot be empty".to_string());
+        }
+        Ok(())
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

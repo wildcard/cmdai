@@ -212,6 +212,32 @@ pub static DANGEROUS_PATTERNS: Lazy<Vec<DangerPattern>> = Lazy::new(|| {
             description: "Override critical command with alias".to_string(),
             shell_specific: None,
         },
+        // HIGH: Network backdoors
+        DangerPattern {
+            pattern: r"nc\s+.*-[a-z]*l[a-z]*\s+.*-[a-z]*e".to_string(),
+            risk_level: RiskLevel::Critical,
+            description: "Netcat bind shell - creates network backdoor".to_string(),
+            shell_specific: None,
+        },
+        DangerPattern {
+            pattern: r"nc\s+-[a-z]*e\s+/bin/(ba)?sh".to_string(),
+            risk_level: RiskLevel::Critical,
+            description: "Netcat shell binding".to_string(),
+            shell_specific: None,
+        },
+        // HIGH: Cron job manipulation
+        DangerPattern {
+            pattern: r"crontab\s+-r".to_string(),
+            risk_level: RiskLevel::High,
+            description: "Remove all cron jobs".to_string(),
+            shell_specific: None,
+        },
+        DangerPattern {
+            pattern: r"\(crontab\s+-l.*;\s*echo".to_string(),
+            risk_level: RiskLevel::High,
+            description: "Add malicious cron job".to_string(),
+            shell_specific: None,
+        },
     ]
 });
 

@@ -70,6 +70,37 @@ impl SafetyValidator {
         Ok(Self { config, patterns })
     }
 
+    /// Check if command contains dangerous pattern in executable context
+    /// (not just in a quoted string)
+    fn is_dangerous_in_context(command: &str, pattern_regex: &regex::Regex) -> bool {
+        // Simple heuristic: if the pattern match is inside quotes, it's likely safe
+        // This prevents false positives like: echo 'rm -rf /' > script.sh
+
+        if !pattern_regex.is_match(command) {
+            return false;
+        }
+
+        // Find all matches
+        for mat in pattern_regex.find_iter(command) {
+            let match_start = mat.start();
+            let before = &command[..match_start];
+
+            // Count unescaped quotes before the match
+            let single_quotes = before.matches('\'').count() - before.matches("\\'").count();
+            let double_quotes = before.matches('"').count() - before.matches("\\\"").count();
+
+            // If odd number of quotes, we're inside a string literal
+            if single_quotes % 2 == 1 || double_quotes % 2 == 1 {
+                continue;
+            }
+
+            // Match is in executable context
+            return true;
+        }
+
+        false
+    }
+
     /// Validate a single command for safety
     pub async fn validate_command(
         &self,
@@ -120,7 +151,7 @@ impl SafetyValidator {
         // Check against dangerous patterns
         for pattern in &patterns {
             if let Ok(regex) = regex::Regex::new(&pattern.pattern) {
-                if regex.is_match(command) {
+                if Self::is_dangerous_in_context(command, &regex) {
                     matched.push(pattern.description.clone());
                     if pattern.risk_level > highest_risk {
                         highest_risk = pattern.risk_level;
@@ -143,7 +174,7 @@ impl SafetyValidator {
             }
 
             if let Ok(regex) = regex::Regex::new(&pattern.pattern) {
-                if regex.is_match(command) {
+                if Self::is_dangerous_in_context(command, &regex) {
                     matched.push(pattern.description.clone());
                     if pattern.risk_level > highest_risk {
                         highest_risk = pattern.risk_level;
@@ -163,10 +194,47 @@ impl SafetyValidator {
         let explanation = if matched.is_empty() {
             "No dangerous patterns detected".to_string()
         } else {
+            // Include specific risk types in explanation
+            let risk_keywords: Vec<&str> = matched
+                .iter()
+                .flat_map(|desc| {
+                    let lower = desc.to_lowercase();
+                    let mut keywords = Vec::new();
+                    if lower.contains("delet") {
+                        keywords.push("deletion");
+                    }
+                    if lower.contains("remov") {
+                        keywords.push("removal");
+                    }
+                    if lower.contains("recursive") {
+                        keywords.push("recursive");
+                    }
+                    if lower.contains("privilege") || lower.contains("root") || lower.contains("sudo")
+                    {
+                        keywords.push("privilege escalation");
+                    }
+                    if lower.contains("network") || lower.contains("backdoor") {
+                        keywords.push("network");
+                    }
+                    if lower.contains("disk") || lower.contains("format") {
+                        keywords.push("disk");
+                    }
+                    keywords
+                })
+                .collect();
+
+            let risk_types = if risk_keywords.is_empty() {
+                String::new()
+            } else {
+                let unique: std::collections::HashSet<_> = risk_keywords.into_iter().collect();
+                format!(" ({})", unique.into_iter().collect::<Vec<_>>().join(", "))
+            };
+
             format!(
-                "Detected {} dangerous pattern(s) at {} risk level",
+                "Detected {} dangerous pattern(s) at {} risk level{}",
                 matched.len(),
-                highest_risk
+                highest_risk,
+                risk_types
             )
         };
 

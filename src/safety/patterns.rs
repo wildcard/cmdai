@@ -147,6 +147,71 @@ pub static DANGEROUS_PATTERNS: Lazy<Vec<DangerPattern>> = Lazy::new(|| {
             description: "Disable firewall".to_string(),
             shell_specific: None,
         },
+        // HIGH: Sudo with system modifications
+        DangerPattern {
+            pattern: r"sudo\s+(systemctl|service)\s+(restart|stop|disable)".to_string(),
+            risk_level: RiskLevel::High,
+            description: "Modify system services with elevated privileges".to_string(),
+            shell_specific: None,
+        },
+        DangerPattern {
+            pattern: r"sudo\s+rm\s".to_string(),
+            risk_level: RiskLevel::High,
+            description: "Delete files with elevated privileges".to_string(),
+            shell_specific: None,
+        },
+        // HIGH: System file modification
+        DangerPattern {
+            pattern: r">\s*/etc/".to_string(),
+            risk_level: RiskLevel::High,
+            description: "Redirect output to system configuration file".to_string(),
+            shell_specific: None,
+        },
+        DangerPattern {
+            pattern: r"(echo|cat|printf)\s+.*>\s*/etc/".to_string(),
+            risk_level: RiskLevel::High,
+            description: "Write to system configuration directory".to_string(),
+            shell_specific: None,
+        },
+        // CRITICAL: Windows path deletion
+        DangerPattern {
+            pattern: r"rm\s+-r[f]*\s+[A-Z]:\\".to_string(),
+            risk_level: RiskLevel::Critical,
+            description: "Recursive deletion of Windows drive root".to_string(),
+            shell_specific: Some(ShellType::Bash), // When running on WSL
+        },
+        DangerPattern {
+            pattern: r"Remove-Item\s+-Recurse\s+-Force\s+[A-Z]:\\".to_string(),
+            risk_level: RiskLevel::Critical,
+            description: "Recursive deletion of Windows drive root".to_string(),
+            shell_specific: Some(ShellType::PowerShell),
+        },
+        // HIGH: PowerShell dangerous operations
+        DangerPattern {
+            pattern: r"Remove-Item\s+.*-Force\s+-Recurse".to_string(),
+            risk_level: RiskLevel::High,
+            description: "Force recursive deletion in PowerShell".to_string(),
+            shell_specific: Some(ShellType::PowerShell),
+        },
+        DangerPattern {
+            pattern: r"Set-ExecutionPolicy\s+Unrestricted".to_string(),
+            risk_level: RiskLevel::High,
+            description: "Disable PowerShell execution policy protection".to_string(),
+            shell_specific: Some(ShellType::PowerShell),
+        },
+        // MODERATE: Environment manipulation
+        DangerPattern {
+            pattern: r"export\s+PATH=".to_string(),
+            risk_level: RiskLevel::Moderate,
+            description: "Modify PATH environment variable".to_string(),
+            shell_specific: None,
+        },
+        DangerPattern {
+            pattern: r"alias\s+(rm|mv|cp)=".to_string(),
+            risk_level: RiskLevel::Moderate,
+            description: "Override critical command with alias".to_string(),
+            shell_specific: None,
+        },
     ]
 });
 
@@ -196,8 +261,8 @@ mod tests {
     #[test]
     fn test_pattern_count() {
         assert!(
-            DANGEROUS_PATTERNS.len() >= 20,
-            "Should have at least 20 dangerous patterns"
+            DANGEROUS_PATTERNS.len() >= 30,
+            "Should have at least 30 dangerous patterns"
         );
     }
 

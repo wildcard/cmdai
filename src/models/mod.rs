@@ -67,10 +67,43 @@ impl std::fmt::Display for RiskLevel {
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
 pub enum SafetyLevel {
+    /// Blocks High and Critical commands, confirms Moderate
     Strict,
+    /// Blocks Critical commands, confirms High
     Moderate,
+    /// Warns about all dangerous commands but allows with confirmation
     Permissive,
+}
+
+impl Default for SafetyLevel {
+    fn default() -> Self {
+        Self::Moderate
+    }
+}
+
+impl std::str::FromStr for SafetyLevel {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "strict" => Ok(Self::Strict),
+            "moderate" => Ok(Self::Moderate),
+            "permissive" => Ok(Self::Permissive),
+            _ => Err(format!("Invalid safety level: {}", s)),
+        }
+    }
+}
+
+impl std::fmt::Display for SafetyLevel {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Strict => write!(f, "strict"),
+            Self::Moderate => write!(f, "moderate"),
+            Self::Permissive => write!(f, "permissive"),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]

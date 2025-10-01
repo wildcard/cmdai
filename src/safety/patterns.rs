@@ -258,12 +258,31 @@ pub static DANGEROUS_PATTERNS: Lazy<Vec<DangerPattern>> = Lazy::new(|| {
             description: "Deleting important file types".to_string(),
             shell_specific: None,
         },
-        // Fix Windows backslash pattern
+        // Fix Windows backslash pattern - works in Bash/PowerShell/WSL
         DangerPattern {
             pattern: r"rm\s+-r[f]*\s+[A-Z]:[/\\]".to_string(),
             risk_level: RiskLevel::Critical,
             description: "Recursive deletion of Windows drive root (with backslash)".to_string(),
-            shell_specific: Some(ShellType::Bash),
+            shell_specific: None, // Works across shells
+        },
+        // MODERATE: Borderline commands - changing permissions
+        DangerPattern {
+            pattern: r"chmod\s+[+\-]x\s+".to_string(),
+            risk_level: RiskLevel::Moderate,
+            description: "Making files executable".to_string(),
+            shell_specific: None,
+        },
+        DangerPattern {
+            pattern: r"chmod\s+[0-7]{3,4}\s+".to_string(),
+            risk_level: RiskLevel::Moderate,
+            description: "Changing file permissions".to_string(),
+            shell_specific: None,
+        },
+        DangerPattern {
+            pattern: r"chown\s+[^\s]+\s+".to_string(),
+            risk_level: RiskLevel::Moderate,
+            description: "Changing file ownership".to_string(),
+            shell_specific: None,
         },
     ]
 });

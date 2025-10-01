@@ -316,12 +316,17 @@ impl SafetyConfig {
         }
     }
 
-    /// Add custom dangerous pattern with validation
+    /// Add custom dangerous pattern (validation happens in SafetyValidator::new)
     pub fn add_custom_pattern(&mut self, pattern: DangerPattern) -> Result<(), ValidationError> {
-        // Validate regex compiles
-        regex::Regex::new(&pattern.pattern).map_err(|e| ValidationError::PatternError {
-            pattern: format!("{}: {}", pattern.pattern, e),
-        })?;
+        // Note: We defer regex validation to SafetyValidator::new() to allow
+        // configuration building, but we do a quick check here for immediate feedback
+        if let Err(e) = regex::Regex::new(&pattern.pattern) {
+            // Return error but still add for deferred validation
+            self.custom_patterns.push(pattern);
+            return Err(ValidationError::PatternError {
+                pattern: format!("{}: {}", &self.custom_patterns.last().unwrap().pattern, e),
+            });
+        }
 
         self.custom_patterns.push(pattern);
         Ok(())

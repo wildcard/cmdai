@@ -317,4 +317,45 @@ impl std::fmt::Display for ShellType {
     }
 }
 
+/// Backend metadata for diagnostics and selection
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BackendInfo {
+    /// Type of backend
+    pub backend_type: BackendType,
+
+    /// Name of the model being used
+    pub model_name: String,
+
+    /// Whether this backend supports streaming responses
+    pub supports_streaming: bool,
+
+    /// Maximum number of tokens the model can generate
+    pub max_tokens: u32,
+
+    /// Typical latency in milliseconds
+    pub typical_latency_ms: u64,
+
+    /// Memory usage in megabytes
+    pub memory_usage_mb: u64,
+
+    /// Backend version string
+    pub version: String,
+}
+
+impl BackendInfo {
+    /// Validate that backend info has reasonable values
+    pub fn validate(&self) -> Result<(), String> {
+        if self.model_name.is_empty() {
+            return Err("Model name cannot be empty".to_string());
+        }
+        if self.max_tokens == 0 {
+            return Err("Max tokens must be positive".to_string());
+        }
+        if self.version.is_empty() {
+            return Err("Version cannot be empty".to_string());
+        }
+        Ok(())
+    }
+}
+
 // All types are public through mod.rs exports

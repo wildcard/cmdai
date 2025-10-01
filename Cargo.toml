@@ -1,0 +1,108 @@
+[package]
+name = "cmdai"
+version = "0.1.0"
+edition = "2021"
+description = "Convert natural language to shell commands using local LLMs"
+license = "MIT"
+repository = "https://github.com/wildcard/cmdai"
+authors = ["Claude Code <noreply@anthropic.com>"]
+keywords = ["cli", "llm", "shell", "commands", "ai"]
+categories = ["command-line-utilities", "development-tools"]
+
+# Binary target
+[[bin]]
+name = "cmdai"
+path = "src/main.rs"
+
+[dependencies]
+# Core CLI and async runtime
+clap = { version = "4.4", features = ["derive", "env", "color"] }
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "time", "sync"] }
+
+# Serialization and configuration
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+toml = "0.8"
+config = "0.13"
+
+# HTTP client for remote backends (optional - feature-gated)
+reqwest = { version = "0.11", features = ["json", "rustls-tls"], default-features = false, optional = true }
+
+# Error handling and logging
+anyhow = "1"
+thiserror = "1"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
+tracing-appender = "0.2"
+
+# User interface and interaction
+dialoguer = "0.11"
+colored = "2"
+indicatif = "0.17"
+
+# Cross-platform support
+directories = "5"
+which = "4.4"
+os_info = "3.7"
+sysinfo = "0.29"
+
+# Model integration (Hugging Face Hub)
+hf-hub = "0.3"
+url = "2.5"
+
+# Date/time handling
+chrono = { version = "0.4", features = ["serde"] }
+
+# Regex for safety validation
+regex = "1"
+
+# Async trait support
+async-trait = "0.1"
+
+# Optional MLX support for Apple Silicon (behind feature flag)
+cxx = { version = "1.0", optional = true }
+
+[dev-dependencies]
+tokio-test = "0.4"
+tempfile = "3"
+serial_test = "3"
+proptest = "1"
+criterion = { version = "0.5", features = ["html_reports"] }
+futures = "0.3"
+
+[[bench]]
+name = "performance"
+harness = false
+
+[features]
+default = ["mock-backend"]
+mock-backend = []
+remote-backends = ["reqwest", "tokio/net"]
+mlx = ["cxx"]
+full = ["remote-backends", "mlx"]
+
+[profile.release]
+# Optimize for binary size (<50MB target)
+opt-level = "z"     # Optimize for size
+lto = true          # Link-time optimization
+strip = true        # Strip debug symbols
+codegen-units = 1   # Single codegen unit for better optimization
+panic = "abort"     # Smaller binary size
+
+[profile.dev]
+# Fast compilation for development
+opt-level = 0
+debug = true
+overflow-checks = true
+
+# Benchmark profile
+[profile.bench]
+opt-level = 3
+debug = false
+lto = true
+
+# Profile for release with debug info (useful for profiling)
+[profile.release-with-debug]
+inherits = "release"
+debug = true
+strip = false

@@ -1,0 +1,10 @@
+# Clippy configuration for cmdai project
+
+# Set cognitive complexity threshold
+cognitive-complexity-threshold = 25
+
+# Avoid false positives for common patterns
+avoid-breaking-exported-api = true
+
+# Style preferences
+enum-variant-name-threshold = 3

@@ -14,15 +14,10 @@ jobs:
     name: Test Suite
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        rust: [stable, beta]
-        exclude:
-          # Reduce CI load - only test beta on Ubuntu
-          - os: macos-latest
-            rust: beta
-          - os: windows-latest
-            rust: beta
+        rust: [stable]
 
     steps:
     - uses: actions/checkout@v4
@@ -44,22 +39,16 @@ jobs:
     
     - name: Check formatting
       run: cargo fmt --all -- --check
-    
+
     - name: Run clippy
       run: cargo clippy --all-targets --all-features -- -D warnings
-    
-    - name: Build tests
+
+    - name: Check test compilation
       run: cargo test --no-run --verbose --all-features
-    
+
     - name: Run tests (TDD - failures expected)
       run: cargo test --verbose --all-features || true
       continue-on-error: true
-    
-    - name: Check test compilation
-      run: |
-        echo "Tests compiled successfully. TDD tests are expected to fail at this stage."
-        cargo test --no-run --test "*contract*" --verbose
-        cargo test --no-run --test "*integration*" --verbose
 
   security:
     name: Security Audit

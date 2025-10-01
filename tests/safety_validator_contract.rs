@@ -498,3 +498,179 @@ async fn test_edge_cases() {
         .await;
     assert!(unicode_result.is_ok(), "Unicode should not error");
 }
+
+#[tokio::test]
+async fn test_cross_platform_path_handling() {
+    // CONTRACT: Should handle both Windows and POSIX paths correctly
+    let validator = SafetyValidator::new(SafetyConfig::moderate()).unwrap();
+
+    // POSIX paths
+    let posix_paths = vec![
+        "ls /home/user/documents",
+        "cat /var/log/syslog",
+        "cd ~/workspace",
+        "rm /tmp/test.txt",
+        "find . -name '*.txt'",
+    ];
+
+    for cmd in posix_paths {
+        let result = validator.validate_command(cmd, ShellType::Bash).await;
+        assert!(
+            result.is_ok(),
+            "POSIX path command should validate: {}",
+            cmd
+        );
+    }
+
+    // Windows paths (PowerShell context)
+    let windows_paths = vec![
+        r"dir C:\Users\Documents",
+        r"type C:\Windows\System32\config.txt",
+        r"cd C:\Program Files",
+        r"del C:\Temp\test.txt",
+    ];
+
+    for cmd in windows_paths {
+        let result = validator.validate_command(cmd, ShellType::PowerShell).await;
+        assert!(
+            result.is_ok(),
+            "Windows path command should validate: {}",
+            cmd
+        );
+    }
+
+    // Dangerous paths that should be flagged on both platforms
+    let dangerous_paths = vec![
+        "rm -rf /",
+        "rm -rf C:\\",
+        "del /f /s /q C:\\*",
+        "format C:",
+    ];
+
+    for cmd in dangerous_paths {
+        let shell = if cmd.contains("C:") {
+            ShellType::PowerShell
+        } else {
+            ShellType::Bash
+        };
+        let result = validator.validate_command(cmd, shell).await;
+        assert!(
+            result.is_ok(),
+            "Dangerous path command should validate: {}",
+            cmd
+        );
+        let validation = result.unwrap();
+        assert!(
+            !validation.allowed,
+            "Dangerous path '{}' should not be allowed",
+            cmd
+        );
+    }
+
+    // Path with spaces (should be handled correctly)
+    let space_paths = vec![
+        r#"cd "/home/user/My Documents""#,
+        r#"ls "/var/log/Application Support""#,
+        r#"dir "C:\Program Files\My Application""#,
+    ];
+
+    for cmd in space_paths {
+        let shell = if cmd.contains("dir") {
+            ShellType::PowerShell
+        } else {
+            ShellType::Bash
+        };
+        let result = validator.validate_command(cmd, shell).await;
+        assert!(
+            result.is_ok(),
+            "Path with spaces should validate: {}",
+            cmd
+        );
+    }
+}
+
+#[tokio::test]
+async fn test_network_failure_resilience() {
+    // CONTRACT: Should not depend on network for validation
+    // (This is a design principle test - validation should be purely local)
+    let validator = SafetyValidator::new(SafetyConfig::strict()).unwrap();
+
+    // Validate a variety of commands without network
+    let commands = vec![
+        "ls -la",
+        "rm -rf /",
+        "sudo apt-get update",
+        "curl http://example.com",
+        "ssh user@host",
+    ];
+
+    for cmd in commands {
+        let result = validator.validate_command(cmd, ShellType::Bash).await;
+        assert!(
+            result.is_ok(),
+            "Validation should work offline for: {}",
+            cmd
+        );
+    }
+
+    // Validation should be fast even for complex commands
+    let start = std::time::Instant::now();
+    let _result = validator
+        .validate_command("complex | command | with | many | pipes", ShellType::Bash)
+        .await;
+    let elapsed = start.elapsed();
+
+    assert!(
+        elapsed < std::time::Duration::from_millis(50),
+        "Validation should be fast (<50ms), took {:?}",
+        elapsed
+    );
+}
+
+#[tokio::test]
+async fn test_custom_safety_patterns() {
+    // CONTRACT: Should support custom safety patterns for project-specific rules
+    let mut config = SafetyConfig::moderate();
+
+    // Add custom pattern for blocking specific commands
+    config.add_custom_pattern(DangerPattern {
+        pattern: r"git\s+push\s+--force".to_string(),
+        risk_level: RiskLevel::High,
+        description: "Force push can overwrite remote history".to_string(),
+        shell_specific: None,
+    });
+
+    let validator = SafetyValidator::new(config).unwrap();
+
+    // Test that custom pattern is detected
+    let force_push = "git push --force origin main";
+    let result = validator
+        .validate_command(force_push, ShellType::Bash)
+        .await
+        .unwrap();
+
+    assert!(
+        matches!(result.risk_level, RiskLevel::High),
+        "Custom pattern should flag force push as high risk"
+    );
+
+    assert!(
+        result
+            .matched_patterns
+            .iter()
+            .any(|p| p.contains("force push")),
+        "Should match custom force push pattern"
+    );
+
+    // Regular git push should still be allowed
+    let regular_push = "git push origin main";
+    let safe_result = validator
+        .validate_command(regular_push, ShellType::Bash)
+        .await
+        .unwrap();
+
+    assert!(
+        safe_result.allowed,
+        "Regular git push should be allowed with moderate safety"
+    );
+}

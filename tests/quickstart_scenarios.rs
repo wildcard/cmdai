@@ -71,7 +71,9 @@ async fn test_list_pdf_files_in_downloads() {
     // QUICKSTART SCENARIO: User wants to find all PDF files in Downloads folder
     // Expected command: find ~/Downloads -name "*.pdf" OR ls ~/Downloads/*.pdf
 
-    let cli = CliApp::new().await.expect("CLI initialization should succeed");
+    let cli = CliApp::new()
+        .await
+        .expect("CLI initialization should succeed");
 
     let args = TestArgs {
         prompt: Some("list all PDF files in my Downloads folder".to_string()),
@@ -123,7 +125,10 @@ async fn test_list_pdf_files_in_downloads() {
         "Safe file listing should be marked as executed"
     );
 
-    println!("✓ Task 9 PASSED: Generated command: {}", cli_result.generated_command);
+    println!(
+        "✓ Task 9 PASSED: Generated command: {}",
+        cli_result.generated_command
+    );
 }
 
 // =============================================================================
@@ -135,22 +140,21 @@ async fn test_compress_images_auto_execute() {
     // QUICKSTART SCENARIO: Compress all images with automatic execution
     // Expected: Command generation + execution tracking (execution module needed)
 
-    let cli = CliApp::new().await.expect("CLI initialization should succeed");
+    let cli = CliApp::new()
+        .await
+        .expect("CLI initialization should succeed");
 
     let args = TestArgs {
         prompt: Some("compress all images in current directory".to_string()),
         shell: Some("bash".to_string()),
         safety: Some("permissive".to_string()), // Auto-execute mode
-        confirm: true, // Auto-confirm
+        confirm: true,                          // Auto-confirm
         ..Default::default()
     };
 
     let result = cli.run_with_args(args).await;
 
-    assert!(
-        result.is_ok(),
-        "Image compression request should succeed"
-    );
+    assert!(result.is_ok(), "Image compression request should succeed");
 
     let cli_result = result.unwrap();
 
@@ -167,10 +171,7 @@ async fn test_compress_images_auto_execute() {
 
     // Should reference images
     assert!(
-        cmd.contains("jpg")
-            || cmd.contains("png")
-            || cmd.contains("image")
-            || cmd.contains("*."),
+        cmd.contains("jpg") || cmd.contains("png") || cmd.contains("image") || cmd.contains("*."),
         "Command should reference image files: {}",
         cli_result.generated_command
     );
@@ -201,7 +202,9 @@ async fn test_find_large_files_custom_backend() {
     // Expected: Backend switching logic + correct find command
     // NOTE: Currently only Mock backend exists, so this tests the pattern
 
-    let cli = CliApp::new().await.expect("CLI initialization should succeed");
+    let cli = CliApp::new()
+        .await
+        .expect("CLI initialization should succeed");
 
     let args = TestArgs {
         prompt: Some("find all files larger than 100MB".to_string()),
@@ -212,10 +215,7 @@ async fn test_find_large_files_custom_backend() {
 
     let result = cli.run_with_args(args).await;
 
-    assert!(
-        result.is_ok(),
-        "Large file search request should succeed"
-    );
+    assert!(result.is_ok(), "Large file search request should succeed");
 
     let cli_result = result.unwrap();
 
@@ -269,7 +269,9 @@ async fn test_dangerous_command_safety_blocking() {
     // QUICKSTART SCENARIO: Safety system blocks dangerous operations
     // Test multiple dangerous command types and safety levels
 
-    let cli = CliApp::new().await.expect("CLI initialization should succeed");
+    let cli = CliApp::new()
+        .await
+        .expect("CLI initialization should succeed");
 
     // Test case 1: Critical command in Strict mode (should block)
     let args_strict = TestArgs {
@@ -388,7 +390,9 @@ async fn test_multi_backend_availability_and_fallback() {
     // Expected: MLX (macOS) → Ollama (local) → vLLM (HTTP) → Mock (fallback)
     // NOTE: Currently only Mock backend is implemented
 
-    let cli = CliApp::new().await.expect("CLI initialization should succeed");
+    let cli = CliApp::new()
+        .await
+        .expect("CLI initialization should succeed");
 
     let args = TestArgs {
         prompt: Some("show disk usage statistics".to_string()),
@@ -399,10 +403,7 @@ async fn test_multi_backend_availability_and_fallback() {
 
     let result = cli.run_with_args(args).await;
 
-    assert!(
-        result.is_ok(),
-        "Backend selection should not fail"
-    );
+    assert!(result.is_ok(), "Backend selection should not fail");
 
     let cli_result = result.unwrap();
 

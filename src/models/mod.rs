@@ -123,7 +123,12 @@ impl std::fmt::Display for GeneratedCommand {
         writeln!(f)?;
         writeln!(f, "{} {}", "Risk Level:".bold(), self.safety_level)?;
         writeln!(f, "{} {}", "Backend:".bold(), self.backend_used)?;
-        writeln!(f, "{} {:.0}%", "Confidence:".bold(), self.confidence_score * 100.0)?;
+        writeln!(
+            f,
+            "{} {:.0}%",
+            "Confidence:".bold(),
+            self.confidence_score * 100.0
+        )?;
 
         if !self.alternatives.is_empty() {
             writeln!(f)?;

@@ -102,7 +102,10 @@ impl SafetyValidator {
         // Validate custom patterns can compile
         for pattern in &config.custom_patterns {
             if let Err(e) = regex::Regex::new(&pattern.pattern) {
-                eprintln!("WARN: Invalid custom safety pattern '{}': {}", pattern.pattern, e);
+                eprintln!(
+                    "WARN: Invalid custom safety pattern '{}': {}",
+                    pattern.pattern, e
+                );
                 return Err(ValidationError::PatternError {
                     pattern: format!("{}: {}", pattern.pattern, e),
                 });
@@ -288,7 +291,9 @@ impl SafetyValidator {
                     if lower.contains("recursive") {
                         keywords.push("recursive");
                     }
-                    if lower.contains("privilege") || lower.contains("root") || lower.contains("sudo")
+                    if lower.contains("privilege")
+                        || lower.contains("root")
+                        || lower.contains("sudo")
                     {
                         keywords.push("privilege escalation");
                     }

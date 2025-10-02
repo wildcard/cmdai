@@ -348,7 +348,10 @@ pub fn validate_patterns() -> Result<(), Vec<String>> {
 
     for pattern in DANGEROUS_PATTERNS.iter() {
         if let Err(e) = Regex::new(&pattern.pattern) {
-            errors.push(format!("Pattern '{}' failed to compile: {}", pattern.pattern, e));
+            errors.push(format!(
+                "Pattern '{}' failed to compile: {}",
+                pattern.pattern, e
+            ));
         }
     }
 

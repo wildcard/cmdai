@@ -132,9 +132,11 @@ impl CliApp {
             });
         };
 
-        let validator = SafetyValidator::new(crate::safety::SafetyConfig::default())
-            .map_err(|e| CliError::ConfigurationError {
-                message: format!("Failed to initialize safety validator: {}", e),
+        let validator =
+            SafetyValidator::new(crate::safety::SafetyConfig::default()).map_err(|e| {
+                CliError::ConfigurationError {
+                    message: format!("Failed to initialize safety validator: {}", e),
+                }
             })?;
 
         Ok(Self {
@@ -198,13 +200,11 @@ impl CliApp {
 
         // Generate command
         let gen_start = Instant::now();
-        let generated = self
-            .backend
-            .generate_command(&request)
-            .await
-            .map_err(|e| CliError::GenerationFailed {
+        let generated = self.backend.generate_command(&request).await.map_err(|e| {
+            CliError::GenerationFailed {
                 details: e.to_string(),
-            })?;
+            }
+        })?;
         let generation_time = gen_start.elapsed();
 
         // Validate command safety
@@ -247,10 +247,7 @@ impl CliApp {
         let debug_info = if args.verbose() {
             Some(format!(
                 "Backend: {}, Model: {}, Confidence: {:.2}, Safety: {:?}",
-                generated.backend_used,
-                "mock-model",
-                generated.confidence_score,
-                safety_level
+                generated.backend_used, "mock-model", generated.confidence_score, safety_level
             ))
         } else {
             None

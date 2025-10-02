@@ -624,5 +624,5 @@ async fn quickstart_command_generation() {
 
 ---
 *Plan Status: COMPLETE - Ready for /tasks command*
-*Based on Constitution v2.1.1 - See `/workspaces/cmdai/.specify/memory/constitution.md`*
+*Based on Constitution v1.0.0 - See `/workspaces/cmdai/.specify/memory/constitution.md`*
 *Feature 002: TDD GREEN Phase - Generated 2025-10-01*

@@ -301,4 +301,4 @@ ios/ or android/
 - [x] quickstart.md - User scenarios and validation tests
 
 ---
-*Based on Constitution v2.1.1 - See `/memory/constitution.md`*
+*Based on Constitution v1.0.0 - See `/workspaces/cmdai/.specify/memory/constitution.md`*

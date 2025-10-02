@@ -863,7 +863,115 @@ Task T037: YAML formatter
 - **Commit granularity**: One task = one commit for TDD audit trail
 - **Parallel execution**: [P] tasks can run simultaneously (different files, no shared state)
 
+## Module F: Quickstart Integration Tests (T051-T055)
+**Extension - End-to-End Quickstart Scenarios from README**
+
+- [x] **T051** Test "list all PDF files in Downloads" quickstart scenario
+  - **Description**: Implement integration test for PDF file discovery workflow
+  - **Files**: Create `tests/quickstart_scenarios.rs`, add test_list_pdf_files_in_downloads()
+  - **Acceptance Criteria**:
+    - Request: "list all PDF files in my Downloads folder"
+    - Expected command contains: `find ~/Downloads -name "*.pdf"` OR `ls ~/Downloads/*.pdf`
+    - Safety validation: RiskLevel::Safe
+    - Output format compatibility: JSON/YAML/plain
+    - **Current Status**: ❌ FAILING (Mock backend generates generic "ls -la")
+  - **Dependencies**: T040 (CLI complete)
+  - **Test Verification**: `cargo test --test quickstart_scenarios test_list_pdf_files_in_downloads`
+  - **Commit Message**: `[T051] Add quickstart test: list PDF files in Downloads`
+
+- [x] **T052** Test "compress all images" with auto-execution
+  - **Description**: Test image compression with automatic execution workflow
+  - **Files**: Update `tests/quickstart_scenarios.rs`, add test_compress_images_auto_execute()
+  - **Acceptance Criteria**:
+    - Request: "compress all images in current directory"
+    - Safety level: Permissive (auto-execute mode)
+    - Command should contain: tar/zip/gzip/compress keyword
+    - No user confirmation required (confirm flag set)
+    - **Current Status**: ❌ FAILING (Mock generates "pwd", execution module needed)
+  - **Dependencies**: T051
+  - **Test Verification**: `cargo test --test quickstart_scenarios test_compress_images_auto_execute`
+  - **Commit Message**: `[T052] Add quickstart test: compress images with auto-exec`
+
+- [x] **T053** Test "find large files" with custom model selection
+  - **Description**: Test file size search with backend metadata verification
+  - **Files**: Update `tests/quickstart_scenarios.rs`, add test_find_large_files_custom_backend()
+  - **Acceptance Criteria**:
+    - Request: "find all files larger than 100MB"
+    - Command should contain: `find . -type f -size +100M`
+    - Verbose mode provides backend info
+    - Generation details mention backend used
+    - **Current Status**: ✅ PASSING (with Mock backend, needs real backend switching)
+  - **Dependencies**: T052
+  - **Test Verification**: `cargo test --test quickstart_scenarios test_find_large_files_custom_backend`
+  - **Commit Message**: `[T053] Add quickstart test: find large files with backend info`
+
+- [x] **T054** Test safety blocking of dangerous commands
+  - **Description**: Comprehensive safety system testing across all safety levels
+  - **Files**: Update `tests/quickstart_scenarios.rs`, add test_dangerous_command_safety_blocking()
+  - **Acceptance Criteria**:
+    - Test Strict mode: blocks High/Critical commands
+    - Test Moderate mode: confirms High, blocks Critical
+    - Test Permissive mode: warns Critical, allows others
+    - Verify blocked_reason messages are meaningful
+    - Verify confirmation prompts are clear
+    - **Current Status**: ❌ FAILING (Execution control needs refinement)
+  - **Dependencies**: T053
+  - **Test Verification**: `cargo test --test quickstart_scenarios test_dangerous_command_safety_blocking`
+  - **Commit Message**: `[T054] Add quickstart test: safety blocking across modes`
+
+- [x] **T055** Test multi-backend switching (MLX, vLLM, Ollama)
+  - **Description**: Test backend availability detection and fallback chain
+  - **Files**: Update `tests/quickstart_scenarios.rs`, add test_multi_backend_availability_and_fallback()
+  - **Acceptance Criteria**:
+    - Mock backend availability checks
+    - Fallback chain: MLX → Ollama → vLLM → Mock
+    - Backend metadata verification (backend_info())
+    - Graceful degradation on unavailable backends
+    - **Current Status**: ✅ PASSING (Mock only, needs real backend implementations)
+  - **Dependencies**: T054
+  - **Test Verification**: `cargo test --test quickstart_scenarios test_multi_backend_availability_and_fallback`
+  - **Commit Message**: `[T055] Add quickstart test: multi-backend switching and fallback`
+
+## Integration Test Summary
+
+| Test Suite | Tests Total | Passing | Status | Notes |
+|------------|-------------|---------|--------|-------|
+| safety::patterns | 5 | 5/5 | ✅ | Pattern database tests |
+| backend_trait_contract | 11 | 11/11 | ✅ | Async trait implementation |
+| cli_interface_contract | 14 | 14/14 | ✅ | CLI argument parsing |
+| error_handling_tests | 10 | 10/10 | ✅ | Error scenarios |
+| integration_tests | 8 | 6/8 | 🟡 | 2 edge case failures |
+| quickstart_scenarios | 6 | 3/6 | 🟡 | **NEW** - TDD RED phase |
+| **TOTAL** | **54** | **49/54** | **91%** | 5 failing tests define future work |
+
+## Future Implementation Needs (Based on Failing Tests)
+
+**From quickstart_scenarios.rs failing tests:**
+
+1. **Enhanced Mock Backend** (for test_list_pdf_files_in_downloads, test_compress_images_auto_execute)
+   - Prompt-aware command generation
+   - Keyword detection: "pdf" → find *.pdf, "compress" → tar/zip
+   - Context-aware responses (Downloads directory, current directory)
+
+2. **Execution Module** (for test_compress_images_auto_execute)
+   - Command execution tracking
+   - Auto-execute mode implementation
+   - Execution result capture
+   - Safety integration with execution control
+
+3. **Real Backend Implementations** (for test_find_large_files_custom_backend, test_multi_backend_availability_and_fallback)
+   - Ollama backend (HTTP API client)
+   - vLLM backend (OpenAI-compatible API)
+   - MLX backend (Apple Silicon FFI)
+   - Backend availability detection
+   - Fallback chain configuration
+
+4. **Safety Execution Control** (for test_dangerous_command_safety_blocking)
+   - Execution blocking based on RiskLevel + SafetyLevel matrix
+   - Proper separation: validation (current) vs execution control (needed)
+   - User confirmation workflow integration
+
 ---
-*Tasks generated: 50 | Total tests: 80 | Target: 100% pass rate (GREEN phase complete)*
-*Feature 002: TDD GREEN Phase - Ready for execution*
+*Tasks generated: 55 | Integration tests: 54 | Current pass rate: 49/54 (91%)*
+*Feature 002: TDD GREEN Phase - Core complete, extension tests define future work*
 *Based on plan.md, data-model.md, quickstart.md, research.md*

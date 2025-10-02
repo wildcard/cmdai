@@ -111,9 +111,27 @@ pub trait IntoCliArgs {
 
 impl CliApp {
     /// Create new CLI application instance
+    ///
+    /// # Security Note
+    /// In test builds, this uses MockCommandGenerator which can generate dangerous commands
+    /// for testing the safety validator. Production builds will return an error until real
+    /// backends are implemented.
     pub async fn new() -> Result<Self, CliError> {
         let config = CliConfig::default();
-        let backend = Box::new(MockCommandGenerator::new());
+
+        // Backend selection based on build configuration
+        // cfg(test) applies to unit tests within this crate
+        // Integration tests need the mock backend too, so we use a more permissive check
+        #[cfg(any(test, debug_assertions))]
+        let backend: Box<dyn CommandGenerator> = Box::new(MockCommandGenerator::new());
+
+        #[cfg(not(any(test, debug_assertions)))]
+        let backend: Box<dyn CommandGenerator> = {
+            return Err(CliError::ConfigurationError {
+                message: "No production backend configured. Real backends (Ollama/vLLM/MLX) coming in Module C.".to_string(),
+            });
+        };
+
         let validator = SafetyValidator::new(crate::safety::SafetyConfig::default())
             .map_err(|e| CliError::ConfigurationError {
                 message: format!("Failed to initialize safety validator: {}", e),
@@ -355,14 +373,22 @@ pub enum CliError {
 }
 
 /// Mock command generator for testing
+///
+/// SECURITY: This mock is restricted to debug builds via #[cfg(any(test, debug_assertions))].
+/// It can generate dangerous commands for testing the safety validator,
+/// which would be a security risk if used in production.
+/// Production (release) builds will not include this code.
+#[cfg(any(test, debug_assertions))]
 struct MockCommandGenerator;
 
+#[cfg(any(test, debug_assertions))]
 impl MockCommandGenerator {
     fn new() -> Self {
         Self
     }
 }
 
+#[cfg(any(test, debug_assertions))]
 #[async_trait]
 impl CommandGenerator for MockCommandGenerator {
     async fn generate_command(

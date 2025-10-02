@@ -80,6 +80,15 @@ pub struct DangerPattern {
 impl SafetyValidator {
     /// Create new validator with given configuration
     pub fn new(config: SafetyConfig) -> Result<Self, ValidationError> {
+        // Validate built-in patterns at startup and log any errors
+        if let Err(errors) = patterns::validate_patterns() {
+            for error in &errors {
+                eprintln!("WARN: Invalid built-in safety pattern: {}", error);
+            }
+            // Continue execution - patterns are pre-validated during development,
+            // this is a defensive check for runtime detection of any issues
+        }
+
         // Validate configuration
         if config.max_command_length == 0 {
             return Err(ValidationError::InvalidConfig {
@@ -93,6 +102,7 @@ impl SafetyValidator {
         // Validate custom patterns can compile
         for pattern in &config.custom_patterns {
             if let Err(e) = regex::Regex::new(&pattern.pattern) {
+                eprintln!("WARN: Invalid custom safety pattern '{}': {}", pattern.pattern, e);
                 return Err(ValidationError::PatternError {
                     pattern: format!("{}: {}", pattern.pattern, e),
                 });

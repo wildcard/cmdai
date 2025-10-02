@@ -348,6 +348,7 @@ dependencies = [
  "futures",
  "hf-hub",
  "indicatif",
+ "once_cell",
  "os_info",
  "proptest",
  "regex",

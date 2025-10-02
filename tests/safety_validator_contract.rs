@@ -540,12 +540,7 @@ async fn test_cross_platform_path_handling() {
     }
 
     // Dangerous paths that should be flagged on both platforms
-    let dangerous_paths = vec![
-        "rm -rf /",
-        "rm -rf C:\\",
-        "del /f /s /q C:\\*",
-        "format C:",
-    ];
+    let dangerous_paths = vec!["rm -rf /", "rm -rf C:\\", "del /f /s /q C:\\*", "format C:"];
 
     for cmd in dangerous_paths {
         let shell = if cmd.contains("C:") {
@@ -581,11 +576,7 @@ async fn test_cross_platform_path_handling() {
             ShellType::Bash
         };
         let result = validator.validate_command(cmd, shell).await;
-        assert!(
-            result.is_ok(),
-            "Path with spaces should validate: {}",
-            cmd
-        );
+        assert!(result.is_ok(), "Path with spaces should validate: {}", cmd);
     }
 }
 

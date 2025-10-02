@@ -6,7 +6,7 @@ use std::time::Instant;
 // Import types that will be implemented later
 // NOTE: These imports will fail until we implement the actual CLI module
 use cmdai::{
-    cli::{CliApp, OutputFormat},
+    cli::{CliApp, IntoCliArgs, OutputFormat},
     models::ShellType,
 };
 
@@ -32,6 +32,36 @@ impl Default for TestArgs {
             verbose: false,
             config_file: None,
         }
+    }
+}
+
+impl IntoCliArgs for TestArgs {
+    fn prompt(&self) -> Option<String> {
+        self.prompt.clone()
+    }
+
+    fn shell(&self) -> Option<String> {
+        self.shell.clone()
+    }
+
+    fn safety(&self) -> Option<String> {
+        self.safety.clone()
+    }
+
+    fn output(&self) -> Option<String> {
+        self.output.clone()
+    }
+
+    fn confirm(&self) -> bool {
+        self.confirm
+    }
+
+    fn verbose(&self) -> bool {
+        self.verbose
+    }
+
+    fn config_file(&self) -> Option<String> {
+        self.config_file.clone()
     }
 }
 

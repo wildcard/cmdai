@@ -2,7 +2,7 @@
 //!
 //! Provides TOML-based configuration with defaults, CLI override, and env var support.
 
-use crate::models::{ConfigSchema, LogLevel, SafetyLevel, ShellType};
+use crate::models::ConfigSchema;
 use std::path::{Path, PathBuf};
 
 mod schema;
@@ -123,17 +123,17 @@ impl ConfigManager {
         // Override with CLI args if provided
         if let Some(safety_str) = cli_safety {
             config.safety_level =
-                SafetyLevel::from_str(safety_str).map_err(ConfigError::ValidationError)?;
+                safety_str.parse().map_err(ConfigError::ValidationError)?;
         }
 
         if let Some(shell_str) = cli_shell {
             config.default_shell =
-                Some(ShellType::from_str(shell_str).map_err(ConfigError::ValidationError)?);
+                Some(shell_str.parse().map_err(ConfigError::ValidationError)?);
         }
 
         if let Some(log_str) = cli_log_level {
             config.log_level =
-                LogLevel::from_str(log_str).map_err(ConfigError::ValidationError)?;
+                log_str.parse().map_err(ConfigError::ValidationError)?;
         }
 
         Ok(config)
@@ -146,17 +146,17 @@ impl ConfigManager {
         // Check for environment variable overrides
         if let Ok(safety_str) = std::env::var("CMDAI_SAFETY_LEVEL") {
             config.safety_level =
-                SafetyLevel::from_str(&safety_str).map_err(ConfigError::ValidationError)?;
+                safety_str.parse().map_err(ConfigError::ValidationError)?;
         }
 
         if let Ok(shell_str) = std::env::var("CMDAI_DEFAULT_SHELL") {
             config.default_shell =
-                Some(ShellType::from_str(&shell_str).map_err(ConfigError::ValidationError)?);
+                Some(shell_str.parse().map_err(ConfigError::ValidationError)?);
         }
 
         if let Ok(log_str) = std::env::var("CMDAI_LOG_LEVEL") {
             config.log_level =
-                LogLevel::from_str(&log_str).map_err(ConfigError::ValidationError)?;
+                log_str.parse().map_err(ConfigError::ValidationError)?;
         }
 
         if let Ok(model_str) = std::env::var("CMDAI_DEFAULT_MODEL") {

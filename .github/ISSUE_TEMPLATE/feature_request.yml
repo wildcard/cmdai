@@ -1,0 +1,195 @@
+name: Feature Request
+description: Suggest a new feature or enhancement for cmdai
+title: "[Feature]: "
+labels: ["enhancement", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for suggesting a feature! We welcome ideas that improve cmdai's safety, performance, or developer experience.
+
+        **Before submitting:**
+        - Search existing issues and discussions to avoid duplicates
+        - Review the [project roadmap](https://github.com/wildcard/cmdai#-roadmap) to see if your feature is planned
+        - Check the [specs directory](https://github.com/wildcard/cmdai/tree/main/specs) for current architecture
+
+  - type: dropdown
+    id: feature-area
+    attributes:
+      label: Feature Area
+      description: Which area of cmdai does this feature relate to?
+      options:
+        - Backend Integration (MLX, vLLM, Ollama, new backends)
+        - Safety Validation (dangerous pattern detection, risk assessment)
+        - Command Execution (shell integration, output handling)
+        - Model Caching (Hugging Face Hub, offline support)
+        - Configuration (settings, preferences, profiles)
+        - CLI Interface (arguments, output formatting, colors)
+        - Performance (startup time, inference speed, memory)
+        - Testing (test coverage, benchmarks, CI/CD)
+        - Documentation (guides, examples, API docs)
+        - Other (specify in description)
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem Statement
+      description: What problem does this feature solve? What's the pain point?
+      placeholder: |
+        Currently, cmdai doesn't support streaming model output, so users have to wait
+        for the entire inference to complete before seeing the command. For large models
+        or complex prompts, this creates a poor UX with no feedback during generation.
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed Solution
+      description: How would you like to see this problem solved?
+      placeholder: |
+        Add streaming support to the CommandGenerator trait:
+
+        ```rust
+        async fn generate_command_stream(
+            &self,
+            request: &CommandRequest
+        ) -> impl Stream<Item = Result<CommandChunk, GeneratorError>>;
+        ```
+
+        Display partial commands as they're generated, with a progress indicator.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: What other approaches did you consider? Why is your proposed solution better?
+      placeholder: |
+        **Alternative 1**: Show a spinner during generation
+        - Pros: Easy to implement
+        - Cons: No visibility into progress, feels unresponsive
+
+        **Alternative 2**: Periodic polling for partial results
+        - Pros: Works with non-streaming backends
+        - Cons: Adds latency, inefficient
+
+        **Why streaming is better**: True real-time feedback, more efficient, better UX
+    validations:
+      required: false
+
+  - type: textarea
+    id: use-cases
+    attributes:
+      label: Use Cases
+      description: Who would benefit from this feature? Provide specific examples.
+      placeholder: |
+        **Use Case 1**: Data scientists using complex prompts
+        - Long inference times (>5s) benefit from streaming feedback
+        - Can see if the model is heading in the right direction
+
+        **Use Case 2**: Users with slow hardware
+        - Provides assurance that cmdai hasn't frozen
+        - Improves perceived performance
+    validations:
+      required: false
+
+  - type: dropdown
+    id: breaking-changes
+    attributes:
+      label: Breaking Changes
+      description: Would this feature require breaking changes to existing APIs or behavior?
+      options:
+        - No breaking changes (fully backward compatible)
+        - Minor breaking changes (can be deprecated gradually)
+        - Major breaking changes (requires migration guide)
+        - Unsure (needs discussion)
+    validations:
+      required: true
+
+  - type: textarea
+    id: implementation
+    attributes:
+      label: Implementation Notes
+      description: |
+        Any thoughts on how to implement this? (optional, but helpful)
+        - Which modules would need changes?
+        - What dependencies might be needed?
+        - Are there any technical challenges?
+      placeholder: |
+        **Modules affected**:
+        - `src/backends/mod.rs` - Add streaming trait method
+        - `src/backends/mlx.rs` - Implement streaming for MLX
+        - `src/cli/mod.rs` - Display streaming output with indicatif
+
+        **Dependencies**:
+        - `futures` or `tokio::stream` for streaming support
+
+        **Challenges**:
+        - Safety validation needs the full command before execution
+        - Some backends (HTTP-based) may not support streaming
+        - Need fallback for non-streaming backends
+    validations:
+      required: false
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      description: How important is this feature to you?
+      options:
+        - Critical (blocking my use of cmdai)
+        - High (significantly improves my workflow)
+        - Medium (nice to have)
+        - Low (minor improvement)
+    validations:
+      required: true
+
+  - type: dropdown
+    id: contribution
+    attributes:
+      label: Contribution
+      description: Are you willing to contribute to implementing this feature?
+      options:
+        - Yes, I can implement this feature myself
+        - Yes, I can help with implementation (guidance needed)
+        - Yes, I can help with testing/review
+        - No, but I can provide feedback on PRs
+        - No, I'm requesting implementation by maintainers
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Context
+      description: |
+        Any other context, screenshots, mockups, or examples that help explain the feature
+      placeholder: |
+        See how ripgrep implements streaming search results for inspiration:
+        https://github.com/BurntSushi/ripgrep
+
+        Mockup of desired output:
+        ```
+        $ cmdai "list large files"
+        Generating command... [████░░░░░░] 40%
+        find . -type f -size +10M
+        ```
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Pre-submission Checklist
+      description: Please confirm the following before submitting
+      options:
+        - label: I have searched existing issues and discussions to avoid duplicates
+          required: true
+        - label: I have reviewed the project roadmap and specs directory
+          required: true
+        - label: This feature aligns with cmdai's safety-first, performance-focused goals
+          required: true
+        - label: I have considered backward compatibility and breaking changes
+          required: true

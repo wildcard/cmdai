@@ -194,9 +194,10 @@ pub enum SafetyLevel {
     Permissive,
 }
 
-impl SafetyLevel {
-    #[allow(clippy::should_implement_trait)]
-    pub fn from_str(s: &str) -> Result<Self, String> {
+impl std::str::FromStr for SafetyLevel {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_lowercase().as_str() {
             "strict" => Ok(SafetyLevel::Strict),
             "moderate" => Ok(SafetyLevel::Moderate),
@@ -212,19 +213,6 @@ impl SafetyLevel {
 impl Default for SafetyLevel {
     fn default() -> Self {
         Self::Moderate
-    }
-}
-
-impl std::str::FromStr for SafetyLevel {
-    type Err = String;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s.to_lowercase().as_str() {
-            "strict" => Ok(Self::Strict),
-            "moderate" => Ok(Self::Moderate),
-            "permissive" => Ok(Self::Permissive),
-            _ => Err(format!("Invalid safety level: {}", s)),
-        }
     }
 }
 
@@ -326,11 +314,6 @@ impl ShellType {
         matches!(self, Self::PowerShell | Self::Cmd)
     }
 
-    /// Parse shell type from string (convenience wrapper for FromStr)
-    #[allow(clippy::should_implement_trait)]
-    pub fn from_str(s: &str) -> Result<Self, String> {
-        <Self as std::str::FromStr>::from_str(s)
-    }
 }
 
 impl Default for ShellType {
@@ -482,9 +465,12 @@ impl LogLevel {
         }
     }
 
-    /// Parse from string (case-insensitive)
-    #[allow(clippy::should_implement_trait)]
-    pub fn from_str(s: &str) -> Result<Self, String> {
+}
+
+impl std::str::FromStr for LogLevel {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_lowercase().as_str() {
             "debug" => Ok(LogLevel::Debug),
             "info" => Ok(LogLevel::Info),

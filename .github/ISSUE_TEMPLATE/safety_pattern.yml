@@ -1,0 +1,242 @@
+name: Safety Pattern
+description: Suggest a dangerous command pattern for the safety validator
+title: "[Safety]: Add pattern for "
+labels: ["safety", "enhancement", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for helping make cmdai safer! Safety patterns prevent dangerous operations from being executed accidentally.
+
+        **What qualifies as a safety pattern?**
+        - Commands that can cause data loss or system damage
+        - Operations requiring elevated privileges
+        - Destructive filesystem operations
+        - Resource exhaustion or denial-of-service
+        - Privilege escalation attempts
+
+        **Before submitting:**
+        - Check `src/safety/patterns.rs` to see if this pattern already exists
+        - Review existing [safety-related issues](https://github.com/wildcard/cmdai/labels/safety)
+
+  - type: input
+    id: pattern-name
+    attributes:
+      label: Pattern Name
+      description: Short, descriptive name for this dangerous pattern
+      placeholder: "Recursive directory deletion with sudo"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: risk-level
+    attributes:
+      label: Risk Level
+      description: How dangerous is this command?
+      options:
+        - Critical (system-destroying, immediate catastrophic failure)
+        - High (data loss, significant damage, hard to recover)
+        - Moderate (potential damage, recoverable with effort)
+        - Low (minor risk, easily reversible)
+    validations:
+      required: true
+
+  - type: textarea
+    id: command-examples
+    attributes:
+      label: Dangerous Command Examples
+      description: Provide real-world examples of dangerous commands this pattern should catch
+      placeholder: |
+        sudo rm -rf /var/*
+        sudo rm -rf /home/*
+        rm -rf / --no-preserve-root
+        sudo chmod -R 777 /
+      render: shell
+    validations:
+      required: true
+
+  - type: textarea
+    id: impact
+    attributes:
+      label: Impact Description
+      description: What happens if a user executes this command? Why is it dangerous?
+      placeholder: |
+        Recursively deleting system directories with `sudo rm -rf` can:
+        - Render the entire operating system unbootable
+        - Delete all user data permanently
+        - Require complete OS reinstallation
+        - Cause data loss that is unrecoverable without backups
+
+        This is one of the most catastrophic commands possible on Unix-like systems.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform Specificity
+      description: Is this pattern specific to certain operating systems?
+      options:
+        - All platforms (Unix-like and Windows)
+        - Unix-like only (macOS, Linux, BSD)
+        - macOS only
+        - Linux only
+        - Windows only
+        - Other (specify in additional context)
+    validations:
+      required: true
+
+  - type: textarea
+    id: detection-strategy
+    attributes:
+      label: Detection Strategy
+      description: How should cmdai detect this pattern? Regex, exact match, AST parsing?
+      placeholder: |
+        **Suggested regex**:
+        ```
+        sudo\s+rm\s+-[rf]+\s+/(var|home|usr|etc|bin|sys)(/.*)?
+        ```
+
+        **Considerations**:
+        - Match variations: `rm -rf`, `rm -fr`, `rm -r -f`
+        - Match with or without trailing slash
+        - Case insensitive? (some shells preserve case)
+        - Handle quoted paths: `rm -rf "/var"`
+
+        **Alternative approach**:
+        Parse command AST to detect:
+        1. `sudo` or `doas` prefix
+        2. `rm` with recursive flag
+        3. Target path in system directories
+    validations:
+      required: false
+
+  - type: textarea
+    id: false-positives
+    attributes:
+      label: False Positive Considerations
+      description: Are there legitimate use cases that might trigger this pattern? How can we avoid false positives?
+      placeholder: |
+        **Potential false positives**:
+        - `sudo rm -rf /var/log/old-logs` (legitimate cleanup)
+        - `sudo rm -rf /var/cache/apt/archives/*` (safe package cleanup)
+
+        **Mitigation strategies**:
+        1. Allow specific safe subdirectories (e.g., `/var/log/*`, `/var/tmp/*`)
+        2. Require `--allow-dangerous` flag with explicit confirmation
+        3. Provide safe alternatives in error message:
+           "Use `sudo find /var/log -mtime +30 -delete` for safe log cleanup"
+    validations:
+      required: false
+
+  - type: textarea
+    id: safe-alternatives
+    attributes:
+      label: Safe Alternatives
+      description: What should users do instead? Provide safer command alternatives.
+      placeholder: |
+        Instead of `sudo rm -rf /var/log/*`, use:
+
+        ```bash
+        # Find and delete old logs safely
+        sudo find /var/log -name "*.log" -mtime +30 -delete
+
+        # Or clean specific log files
+        sudo truncate -s 0 /var/log/syslog
+
+        # Or use logrotate for automated cleanup
+        sudo logrotate -f /etc/logrotate.conf
+        ```
+      render: shell
+    validations:
+      required: false
+
+  - type: textarea
+    id: error-message
+    attributes:
+      label: Suggested Error Message
+      description: What should cmdai tell the user when this pattern is detected?
+      placeholder: |
+        ```
+        CRITICAL: Recursive deletion of system directory detected
+
+        Command: sudo rm -rf /var/*
+
+        This command will:
+        - Delete critical system files
+        - Make your system unbootable
+        - Cause permanent data loss
+
+        This operation is blocked for safety. If you absolutely must proceed:
+        1. Ensure you have a full system backup
+        2. Use --allow-dangerous flag
+        3. Confirm with --yes flag
+
+        Safer alternatives:
+        - Clean specific subdirectories: sudo rm -rf /var/tmp/*
+        - Use targeted cleanup: sudo find /var/log -mtime +30 -delete
+        ```
+    validations:
+      required: false
+
+  - type: textarea
+    id: related-patterns
+    attributes:
+      label: Related Patterns
+      description: Are there similar patterns that should also be detected?
+      placeholder: |
+        Related dangerous patterns to consider:
+        - `sudo dd if=/dev/zero of=/dev/sda` (disk wipe)
+        - `sudo chmod -R 000 /` (permission destruction)
+        - `sudo chown -R nobody:nogroup /` (ownership corruption)
+        - `:(){ :|:& };:` (fork bomb using similar recursive logic)
+    validations:
+      required: false
+
+  - type: dropdown
+    id: contribution
+    attributes:
+      label: Contribution
+      description: Can you help implement this safety pattern?
+      options:
+        - Yes, I can submit a PR with the pattern implementation
+        - Yes, I can help with testing and validation
+        - No, but I can provide feedback on implementation
+        - No, requesting implementation by maintainers
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Context
+      description: |
+        Any other context:
+        - Real-world incidents where this pattern caused damage
+        - Links to documentation about the danger
+        - Shell-specific variations (bash vs zsh vs fish)
+        - Screenshots or examples from other tools
+      placeholder: |
+        **Real-world incident**:
+        A student accidentally ran `sudo rm -rf / --no-preserve-root` while trying
+        to clean up a project directory, destroying their entire Linux installation.
+        Story: https://example.com/disaster-story
+
+        **Similar protection in other tools**:
+        - Bash has `--preserve-root` as default since version 4.4
+        - ZSH has `rm_star_silent` option to confirm `rm *`
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Pre-submission Checklist
+      description: Please confirm the following before submitting
+      options:
+        - label: I have checked `src/safety/patterns.rs` and this pattern doesn't exist
+          required: true
+        - label: I have provided real-world examples of dangerous commands
+          required: true
+        - label: I have explained the impact and why this is dangerous
+          required: true
+        - label: I have considered false positives and suggested mitigations
+          required: false

@@ -102,7 +102,7 @@ impl ShellDetector {
     /// Get the shell from an environment variable or detect
     pub fn from_env_or_detect(env_var: &str) -> ShellType {
         if let Ok(shell_str) = std::env::var(env_var) {
-            if let Ok(shell) = ShellType::from_str(&shell_str) {
+            if let Ok(shell) = shell_str.parse::<ShellType>() {
                 return shell;
             }
         }

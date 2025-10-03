@@ -212,6 +212,7 @@ impl ConfigManager {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::models::{LogLevel, SafetyLevel};
     use tempfile::TempDir;
 
     #[test]

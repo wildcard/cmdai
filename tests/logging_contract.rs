@@ -1,6 +1,7 @@
 // Logging module contract tests - THESE MUST FAIL INITIALLY (TDD)
 // Tests validate the logging module API from specs/003-implement-core-infrastructure/contracts/logging-api.md
 
+use std::str::FromStr;
 use std::time::Duration;
 use tempfile::TempDir;
 

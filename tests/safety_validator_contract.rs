@@ -262,7 +262,7 @@ async fn test_custom_pattern_addition() {
         shell_specific: None,
     };
 
-    config.add_custom_pattern(custom_pattern);
+    config.add_custom_pattern(custom_pattern).unwrap();
     let validator = SafetyValidator::new(config).unwrap();
 
     let deploy_cmd = "deploy app to production";
@@ -449,7 +449,7 @@ async fn test_configuration_validation() {
 
     // Test with regex pattern errors
     let mut bad_pattern_config = SafetyConfig::default();
-    bad_pattern_config.add_custom_pattern(DangerPattern {
+    let _ = bad_pattern_config.add_custom_pattern(DangerPattern {
         pattern: r"[invalid regex(".to_string(), // Invalid regex
         risk_level: RiskLevel::High,
         description: "Bad pattern".to_string(),
@@ -624,12 +624,14 @@ async fn test_custom_safety_patterns() {
     let mut config = SafetyConfig::moderate();
 
     // Add custom pattern for blocking specific commands
-    config.add_custom_pattern(DangerPattern {
-        pattern: r"git\s+push\s+--force".to_string(),
-        risk_level: RiskLevel::High,
-        description: "Force push can overwrite remote history".to_string(),
-        shell_specific: None,
-    });
+    config
+        .add_custom_pattern(DangerPattern {
+            pattern: r"git\s+push\s+--force".to_string(),
+            risk_level: RiskLevel::High,
+            description: "Force push can overwrite remote history".to_string(),
+            shell_specific: None,
+        })
+        .unwrap();
 
     let validator = SafetyValidator::new(config).unwrap();
 

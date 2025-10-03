@@ -195,12 +195,16 @@ pub enum SafetyLevel {
 }
 
 impl SafetyLevel {
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Result<Self, String> {
         match s.to_lowercase().as_str() {
             "strict" => Ok(SafetyLevel::Strict),
             "moderate" => Ok(SafetyLevel::Moderate),
             "permissive" => Ok(SafetyLevel::Permissive),
-            _ => Err(format!("Invalid safety level '{}'. Valid values: strict, moderate, permissive", s)),
+            _ => Err(format!(
+                "Invalid safety level '{}'. Valid values: strict, moderate, permissive",
+                s
+            )),
         }
     }
 }
@@ -323,6 +327,7 @@ impl ShellType {
     }
 
     /// Parse shell type from string (convenience wrapper for FromStr)
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Result<Self, String> {
         <Self as std::str::FromStr>::from_str(s)
     }
@@ -478,6 +483,7 @@ impl LogLevel {
     }
 
     /// Parse from string (case-insensitive)
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Result<Self, String> {
         match s.to_lowercase().as_str() {
             "debug" => Ok(LogLevel::Debug),
@@ -680,6 +686,12 @@ pub struct UserConfigurationBuilder {
     log_rotation_days: u32,
 }
 
+impl Default for UserConfigurationBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl UserConfigurationBuilder {
     pub fn new() -> Self {
         let defaults = UserConfiguration::default();
@@ -747,15 +759,25 @@ pub struct ConfigSchema {
 impl ConfigSchema {
     pub fn new() -> Self {
         let mut known_keys = HashMap::new();
-        known_keys.insert("general.safety_level".to_string(), "SafetyLevel enum".to_string());
-        known_keys.insert("general.default_shell".to_string(), "ShellType enum".to_string());
+        known_keys.insert(
+            "general.safety_level".to_string(),
+            "SafetyLevel enum".to_string(),
+        );
+        known_keys.insert(
+            "general.default_shell".to_string(),
+            "ShellType enum".to_string(),
+        );
         known_keys.insert("general.default_model".to_string(), "String".to_string());
         known_keys.insert("logging.log_level".to_string(), "LogLevel enum".to_string());
         known_keys.insert("logging.log_rotation_days".to_string(), "u32".to_string());
         known_keys.insert("cache.max_size_gb".to_string(), "u64".to_string());
 
         Self {
-            known_sections: vec!["general".to_string(), "logging".to_string(), "cache".to_string()],
+            known_sections: vec![
+                "general".to_string(),
+                "logging".to_string(),
+                "cache".to_string(),
+            ],
             known_keys,
             deprecated_keys: HashMap::new(),
         }
@@ -798,8 +820,12 @@ impl ExecutionContext {
             shell_type,
             platform,
             environment_vars,
-            username: std::env::var("USER").or_else(|_| std::env::var("USERNAME")).unwrap_or_else(|_| "unknown".to_string()),
-            hostname: std::env::var("HOSTNAME").or_else(|_| std::env::var("COMPUTERNAME")).unwrap_or_else(|_| "unknown".to_string()),
+            username: std::env::var("USER")
+                .or_else(|_| std::env::var("USERNAME"))
+                .unwrap_or_else(|_| "unknown".to_string()),
+            hostname: std::env::var("HOSTNAME")
+                .or_else(|_| std::env::var("COMPUTERNAME"))
+                .unwrap_or_else(|_| "unknown".to_string()),
             captured_at: Utc::now(),
         })
     }
@@ -807,15 +833,25 @@ impl ExecutionContext {
     /// Filter environment variables to exclude sensitive data
     fn filter_env_vars() -> HashMap<String, String> {
         let sensitive_patterns = [
-            "API_KEY", "TOKEN", "SECRET", "PASSWORD", "PASSWD",
-            "CREDENTIAL", "AUTH", "PRIVATE", "KEY",
+            "API_KEY",
+            "TOKEN",
+            "SECRET",
+            "PASSWORD",
+            "PASSWD",
+            "CREDENTIAL",
+            "AUTH",
+            "PRIVATE",
+            "KEY",
         ];
 
         std::env::vars()
             .filter(|(key, value)| {
                 // Filter out sensitive variables and empty values
-                !key.is_empty() && !value.is_empty() &&
-                !sensitive_patterns.iter().any(|pattern| key.to_uppercase().contains(pattern))
+                !key.is_empty()
+                    && !value.is_empty()
+                    && !sensitive_patterns
+                        .iter()
+                        .any(|pattern| key.to_uppercase().contains(pattern))
             })
             .collect()
     }
@@ -870,11 +906,7 @@ impl LogEntry {
     }
 
     /// Add metadata field
-    pub fn with_metadata(
-        mut self,
-        key: impl Into<String>,
-        value: serde_json::Value,
-    ) -> Self {
+    pub fn with_metadata(mut self, key: impl Into<String>, value: serde_json::Value) -> Self {
         self.metadata.insert(key.into(), value);
         self
     }

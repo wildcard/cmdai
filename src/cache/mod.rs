@@ -2,7 +2,6 @@
 //!
 //! Provides LRU cache management, integrity validation, and offline support.
 
-use crate::models::{CacheManifest, CachedModel};
 use std::path::PathBuf;
 use std::sync::{Arc, RwLock};
 
@@ -62,7 +61,9 @@ impl CacheManager {
     /// Create a new CacheManager with default XDG cache directory
     pub fn new() -> Result<Self, CacheError> {
         let cache_dir = dirs::cache_dir()
-            .ok_or_else(|| CacheError::DirectoryError("Could not determine cache directory".to_string()))?
+            .ok_or_else(|| {
+                CacheError::DirectoryError("Could not determine cache directory".to_string())
+            })?
             .join("cmdai")
             .join("models");
 
@@ -96,9 +97,12 @@ impl CacheManager {
         // Check if model is already cached
         if self.is_cached(model_id) {
             let cached_model = {
-                let manifest = self.manifest.read()
+                let manifest = self
+                    .manifest
+                    .read()
                     .map_err(|e| CacheError::ManifestError(format!("Lock error: {}", e)))?;
-                manifest.get_model(model_id)
+                manifest
+                    .get_model(model_id)
                     .ok_or_else(|| CacheError::ModelNotFound(model_id.to_string()))?
             };
 
@@ -114,7 +118,9 @@ impl CacheManager {
 
             // Update last accessed time
             {
-                let mut manifest = self.manifest.write()
+                let mut manifest = self
+                    .manifest
+                    .write()
                     .map_err(|e| CacheError::ManifestError(format!("Lock error: {}", e)))?;
                 manifest.update_last_accessed(model_id)?;
             }
@@ -128,26 +134,37 @@ impl CacheManager {
 
     /// Check if a model is cached
     pub fn is_cached(&self, model_id: &str) -> bool {
-        self.manifest.read()
+        self.manifest
+            .read()
             .map(|manifest| manifest.has_model(model_id))
             .unwrap_or(false)
     }
 
     /// Remove a specific model from cache
     pub async fn remove_model(&self, model_id: &str) -> Result<(), CacheError> {
-        let mut manifest = self.manifest.write()
-            .map_err(|e| CacheError::ManifestError(format!("Lock error: {}", e)))?;
+        let path_to_delete = {
+            let manifest = self
+                .manifest
+                .read()
+                .map_err(|e| CacheError::ManifestError(format!("Lock error: {}", e)))?;
 
-        let cached_model = manifest
-            .get_model(model_id)
-            .ok_or_else(|| CacheError::ModelNotFound(model_id.to_string()))?;
+            let cached_model = manifest
+                .get_model(model_id)
+                .ok_or_else(|| CacheError::ModelNotFound(model_id.to_string()))?;
 
-        // Delete the model file
-        if cached_model.path.exists() {
-            tokio::fs::remove_file(&cached_model.path).await?;
+            cached_model.path.clone()
+        };
+
+        // Delete the model file (lock released)
+        if path_to_delete.exists() {
+            tokio::fs::remove_file(&path_to_delete).await?;
         }
 
         // Remove from manifest
+        let mut manifest = self
+            .manifest
+            .write()
+            .map_err(|e| CacheError::ManifestError(format!("Lock error: {}", e)))?;
         manifest.remove_model(model_id)?;
 
         Ok(())
@@ -155,22 +172,33 @@ impl CacheManager {
 
     /// Clear all cached models
     pub async fn clear_cache(&self) -> Result<(), CacheError> {
-        let mut manifest = self.manifest.write()
-            .map_err(|e| CacheError::ManifestError(format!("Lock error: {}", e)))?;
+        let paths_to_delete: Vec<PathBuf> = {
+            let manifest = self
+                .manifest
+                .read()
+                .map_err(|e| CacheError::ManifestError(format!("Lock error: {}", e)))?;
 
-        // Get all model IDs before clearing
-        let model_ids: Vec<String> = manifest.list_models().into_iter().map(|s| s.to_string()).collect();
+            // Get all model paths before clearing
+            manifest
+                .list_models()
+                .into_iter()
+                .filter_map(|model_id| manifest.get_model(&model_id))
+                .map(|cached_model| cached_model.path.clone())
+                .collect()
+        };
 
-        // Delete all model files
-        for model_id in &model_ids {
-            if let Some(cached_model) = manifest.get_model(model_id) {
-                if cached_model.path.exists() {
-                    tokio::fs::remove_file(&cached_model.path).await?;
-                }
+        // Delete all model files (lock released)
+        for path in &paths_to_delete {
+            if path.exists() {
+                tokio::fs::remove_file(path).await?;
             }
         }
 
         // Clear manifest
+        let mut manifest = self
+            .manifest
+            .write()
+            .map_err(|e| CacheError::ManifestError(format!("Lock error: {}", e)))?;
         manifest.clear()?;
 
         Ok(())
@@ -178,7 +206,9 @@ impl CacheManager {
 
     /// Get cache statistics
     pub fn stats(&self) -> CacheStats {
-        let (models, total_size) = self.manifest.read()
+        let (models, total_size) = self
+            .manifest
+            .read()
             .map(|manifest| {
                 let models = manifest.list_models();
                 let total_size = manifest.total_size();
@@ -196,30 +226,47 @@ impl CacheManager {
 
     /// Validate integrity of all cached models
     pub async fn validate_integrity(&self) -> Result<IntegrityReport, CacheError> {
-        let manifest = self.manifest.read()
-            .map_err(|e| CacheError::ManifestError(format!("Lock error: {}", e)))?;
-        let model_ids = manifest.list_models();
+        let models_to_check: Vec<(String, PathBuf, String)> = {
+            let manifest = self
+                .manifest
+                .read()
+                .map_err(|e| CacheError::ManifestError(format!("Lock error: {}", e)))?;
+
+            manifest
+                .list_models()
+                .into_iter()
+                .filter_map(|model_id| {
+                    manifest
+                        .get_model(&model_id)
+                        .map(|cached_model| {
+                            (
+                                model_id.clone(),
+                                cached_model.path.clone(),
+                                cached_model.checksum.clone(),
+                            )
+                        })
+                })
+                .collect()
+        };
 
         let mut valid_models = Vec::new();
         let mut corrupted_models = Vec::new();
         let mut missing_models = Vec::new();
 
-        for model_id in model_ids {
-            if let Some(cached_model) = manifest.get_model(&model_id) {
-                if !cached_model.path.exists() {
-                    missing_models.push(model_id.clone());
-                } else {
-                    match Self::calculate_checksum(&cached_model.path).await {
-                        Ok(actual_checksum) => {
-                            if actual_checksum == cached_model.checksum {
-                                valid_models.push(model_id.clone());
-                            } else {
-                                corrupted_models.push(model_id.clone());
-                            }
+        for (model_id, path, expected_checksum) in models_to_check {
+            if !path.exists() {
+                missing_models.push(model_id);
+            } else {
+                match Self::calculate_checksum(&path).await {
+                    Ok(actual_checksum) => {
+                        if actual_checksum == expected_checksum {
+                            valid_models.push(model_id);
+                        } else {
+                            corrupted_models.push(model_id);
                         }
-                        Err(_) => {
-                            corrupted_models.push(model_id.clone());
-                        }
+                    }
+                    Err(_) => {
+                        corrupted_models.push(model_id);
                     }
                 }
             }

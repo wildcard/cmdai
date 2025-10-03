@@ -378,8 +378,11 @@ pub fn get_patterns_by_risk(min_risk: RiskLevel) -> Vec<&'static DangerPattern> 
         .collect()
 }
 
+/// Type alias for compiled pattern tuple
+type CompiledPattern = (Regex, RiskLevel, String, Option<ShellType>);
+
 /// Compiled regex patterns for performance (cached at startup)
-pub static COMPILED_PATTERNS: Lazy<Vec<(Regex, RiskLevel, String, Option<ShellType>)>> =
+pub static COMPILED_PATTERNS: Lazy<Vec<CompiledPattern>> =
     Lazy::new(|| {
         DANGEROUS_PATTERNS
             .iter()

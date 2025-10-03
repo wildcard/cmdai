@@ -20,36 +20,55 @@ fn test_execution_context_capture() {
     let context = result.unwrap();
 
     // Verify all required fields are populated
-    assert!(context.current_dir().is_absolute(), "Current dir should be absolute path");
-    assert!(!context.username().is_empty(), "Username should not be empty");
-    assert!(!context.hostname().is_empty(), "Hostname should not be empty");
+    assert!(
+        context.current_dir().is_absolute(),
+        "Current dir should be absolute path"
+    );
+    assert!(
+        !context.username().is_empty(),
+        "Username should not be empty"
+    );
+    assert!(
+        !context.hostname().is_empty(),
+        "Hostname should not be empty"
+    );
 
     // Shell type should be detected (or fallback to Sh)
     let shell = context.shell_type();
-    assert!(matches!(
-        shell,
-        ShellType::Bash | ShellType::Zsh | ShellType::Fish | ShellType::PowerShell | ShellType::Cmd | ShellType::Sh
-    ), "Should return valid shell type");
+    assert!(
+        matches!(
+            shell,
+            ShellType::Bash
+                | ShellType::Zsh
+                | ShellType::Fish
+                | ShellType::PowerShell
+                | ShellType::Cmd
+                | ShellType::Sh
+        ),
+        "Should return valid shell type"
+    );
 
     // Platform should be detected
     let platform = context.platform();
-    assert!(matches!(
-        platform,
-        Platform::Linux | Platform::MacOS | Platform::Windows
-    ), "Should return valid platform");
+    assert!(
+        matches!(
+            platform,
+            Platform::Linux | Platform::MacOS | Platform::Windows
+        ),
+        "Should return valid platform"
+    );
 }
 
 #[test]
 fn test_execution_context_new() {
     // CONTRACT: ExecutionContext::new() creates context with custom values
     let test_dir = PathBuf::from("/tmp/test");
-    let result = ExecutionContext::new(
-        test_dir.clone(),
-        ShellType::Bash,
-        Platform::Linux,
-    );
+    let result = ExecutionContext::new(test_dir.clone(), ShellType::Bash, Platform::Linux);
 
-    assert!(result.is_ok(), "Context creation with custom values should succeed");
+    assert!(
+        result.is_ok(),
+        "Context creation with custom values should succeed"
+    );
 
     let context = result.unwrap();
     assert_eq!(context.current_dir(), test_dir.as_path());
@@ -67,11 +86,16 @@ fn test_context_filters_sensitive_env_vars() {
     let context = ExecutionContext::capture().unwrap();
 
     // Sensitive var should NOT be included
-    assert!(!context.has_env_var("TEST_API_KEY"), "API_KEY should be filtered");
+    assert!(
+        !context.has_env_var("TEST_API_KEY"),
+        "API_KEY should be filtered"
+    );
 
     // Non-sensitive var should be included
-    assert!(context.has_env_var("HOME") || context.has_env_var("PATH"),
-           "Standard env vars should be included");
+    assert!(
+        context.has_env_var("HOME") || context.has_env_var("PATH"),
+        "Standard env vars should be included"
+    );
 
     // Cleanup
     env::remove_var("TEST_API_KEY");
@@ -85,12 +109,15 @@ fn test_context_includes_essential_env_vars() {
     let env_vars = context.environment_vars();
 
     // Should include PATH, HOME, USER (or equivalents)
-    let has_essential = env_vars.contains_key("PATH") ||
-                       env_vars.contains_key("HOME") ||
-                       env_vars.contains_key("USER") ||
-                       env_vars.contains_key("USERNAME");
+    let has_essential = env_vars.contains_key("PATH")
+        || env_vars.contains_key("HOME")
+        || env_vars.contains_key("USER")
+        || env_vars.contains_key("USERNAME");
 
-    assert!(has_essential, "Should include at least one essential env var");
+    assert!(
+        has_essential,
+        "Should include at least one essential env var"
+    );
 
     // All keys should be non-empty
     for (key, value) in env_vars.iter() {
@@ -140,8 +167,13 @@ fn test_shell_detector_handles_variants() {
         env::set_var("SHELL", shell_path);
         let detected = detector.detect_from_env();
 
-        assert_eq!(detected, Some(expected),
-                  "Failed to detect {} from path {}", expected, shell_path);
+        assert_eq!(
+            detected,
+            Some(expected),
+            "Failed to detect {} from path {}",
+            expected,
+            shell_path
+        );
     }
 
     // Restore original SHELL
@@ -162,7 +194,11 @@ fn test_shell_detector_falls_back_to_sh() {
     let detected = detector.detect();
 
     // Should fall back to Sh
-    assert_eq!(detected, ShellType::Sh, "Should fallback to Sh when detection fails");
+    assert_eq!(
+        detected,
+        ShellType::Sh,
+        "Should fallback to Sh when detection fails"
+    );
 
     // Restore SHELL
     if let Some(shell) = original_shell {
@@ -181,10 +217,18 @@ fn test_shell_detector_applies_override() {
 
     // No override should use detection
     let auto_detected = detector.with_override(None);
-    assert!(matches!(
-        auto_detected,
-        ShellType::Bash | ShellType::Zsh | ShellType::Fish | ShellType::PowerShell | ShellType::Cmd | ShellType::Sh
-    ), "Should use auto-detection when no override");
+    assert!(
+        matches!(
+            auto_detected,
+            ShellType::Bash
+                | ShellType::Zsh
+                | ShellType::Fish
+                | ShellType::PowerShell
+                | ShellType::Cmd
+                | ShellType::Sh
+        ),
+        "Should use auto-detection when no override"
+    );
 }
 
 #[test]
@@ -192,10 +236,13 @@ fn test_platform_detector_returns_correct_platform() {
     // CONTRACT: PlatformDetector::detect() returns correct platform
     let platform = PlatformDetector::detect();
 
-    assert!(matches!(
-        platform,
-        Platform::Linux | Platform::MacOS | Platform::Windows
-    ), "Should detect valid platform");
+    assert!(
+        matches!(
+            platform,
+            Platform::Linux | Platform::MacOS | Platform::Windows
+        ),
+        "Should detect valid platform"
+    );
 
     // Verify against cfg! macros
     #[cfg(target_os = "linux")]
@@ -227,12 +274,20 @@ fn test_context_to_prompt_context() {
     let prompt_text = context.to_prompt_context();
 
     // Should contain key information
-    assert!(prompt_text.contains("directory") || prompt_text.contains("dir"),
-           "Should mention current directory");
-    assert!(!prompt_text.is_empty(), "Prompt context should not be empty");
+    assert!(
+        prompt_text.contains("directory") || prompt_text.contains("dir"),
+        "Should mention current directory"
+    );
+    assert!(
+        !prompt_text.is_empty(),
+        "Prompt context should not be empty"
+    );
 
     // Should be human-readable
-    assert!(prompt_text.len() > 20, "Prompt context should be substantial");
+    assert!(
+        prompt_text.len() > 20,
+        "Prompt context should be substantial"
+    );
 }
 
 #[test]
@@ -242,8 +297,11 @@ fn test_context_performance() {
     let _ = ExecutionContext::capture();
     let duration = start.elapsed();
 
-    assert!(duration.as_millis() < 50,
-           "Context capture should be <50ms, took {}ms", duration.as_millis());
+    assert!(
+        duration.as_millis() < 50,
+        "Context capture should be <50ms, took {}ms",
+        duration.as_millis()
+    );
 }
 
 #[test]
@@ -252,12 +310,16 @@ fn test_context_has_env_var() {
     let context = ExecutionContext::capture().unwrap();
 
     // PATH should exist on all platforms
-    assert!(context.has_env_var("PATH") || context.has_env_var("Path"),
-           "PATH should be available");
+    assert!(
+        context.has_env_var("PATH") || context.has_env_var("Path"),
+        "PATH should be available"
+    );
 
     // Non-existent var should return false
-    assert!(!context.has_env_var("NONEXISTENT_VAR_12345"),
-           "Non-existent var should return false");
+    assert!(
+        !context.has_env_var("NONEXISTENT_VAR_12345"),
+        "Non-existent var should return false"
+    );
 }
 
 #[test]
@@ -271,8 +333,11 @@ fn test_context_get_env_var() {
     }
 
     // Non-existent var returns None
-    assert_eq!(context.get_env_var("NONEXISTENT_VAR_12345"), None,
-              "Non-existent var should return None");
+    assert_eq!(
+        context.get_env_var("NONEXISTENT_VAR_12345"),
+        None,
+        "Non-existent var should return None"
+    );
 }
 
 #[test]
@@ -303,15 +368,32 @@ fn test_sensitive_data_filtering_patterns() {
     let context = ExecutionContext::capture().unwrap();
 
     // Sensitive vars should be filtered
-    assert!(!context.has_env_var("MY_API_KEY"), "API_KEY should be filtered");
-    assert!(!context.has_env_var("AUTH_TOKEN"), "TOKEN should be filtered");
-    assert!(!context.has_env_var("PASSWORD"), "PASSWORD should be filtered");
-    assert!(!context.has_env_var("SECRET_VALUE"), "SECRET should be filtered");
-    assert!(!context.has_env_var("AWS_SECRET_ACCESS_KEY"), "AWS secret should be filtered");
+    assert!(
+        !context.has_env_var("MY_API_KEY"),
+        "API_KEY should be filtered"
+    );
+    assert!(
+        !context.has_env_var("AUTH_TOKEN"),
+        "TOKEN should be filtered"
+    );
+    assert!(
+        !context.has_env_var("PASSWORD"),
+        "PASSWORD should be filtered"
+    );
+    assert!(
+        !context.has_env_var("SECRET_VALUE"),
+        "SECRET should be filtered"
+    );
+    assert!(
+        !context.has_env_var("AWS_SECRET_ACCESS_KEY"),
+        "AWS secret should be filtered"
+    );
 
     // Normal vars should be included
-    assert!(context.has_env_var("NORMAL_VAR") || context.has_env_var("PATH"),
-           "Normal vars should be included");
+    assert!(
+        context.has_env_var("NORMAL_VAR") || context.has_env_var("PATH"),
+        "Normal vars should be included"
+    );
 
     // Cleanup
     env::remove_var("MY_API_KEY");
@@ -333,8 +415,14 @@ fn test_context_captured_at_timestamp() {
 
     let captured = context.captured_at();
 
-    assert!(captured >= before, "Captured time should be after or equal to before time");
-    assert!(captured <= after, "Captured time should be before or equal to after time");
+    assert!(
+        captured >= before,
+        "Captured time should be after or equal to before time"
+    );
+    assert!(
+        captured <= after,
+        "Captured time should be before or equal to after time"
+    );
 }
 
 #[test]
@@ -350,8 +438,11 @@ fn test_invalid_current_directory_handling() {
     // Should either succeed or return ExecutionError::CurrentDirNotAccessible
     match result {
         Ok(context) => {
-            assert!(context.current_dir().exists() || !context.current_dir().to_str().unwrap().is_empty(),
-                   "Current dir should be valid if capture succeeds");
+            assert!(
+                context.current_dir().exists()
+                    || !context.current_dir().to_str().unwrap().is_empty(),
+                "Current dir should be valid if capture succeeds"
+            );
         }
         Err(ExecutionError::CurrentDirNotAccessible(_)) => {
             // Expected error for inaccessible directory

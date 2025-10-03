@@ -55,7 +55,7 @@ impl ExecutionContext {
         platform: Platform,
     ) -> Result<Self, ExecutionError> {
         let inner = ExecutionContextModel::new(current_dir, shell_type, platform)
-            .map_err(|e| ExecutionError::InvalidContext(e))?;
+            .map_err(ExecutionError::InvalidContext)?;
 
         Ok(Self { inner })
     }
@@ -139,11 +139,7 @@ mod tests {
     #[test]
     fn test_execution_context_new() {
         let test_dir = PathBuf::from("/tmp/test");
-        let result = ExecutionContext::new(
-            test_dir.clone(),
-            ShellType::Bash,
-            Platform::Linux,
-        );
+        let result = ExecutionContext::new(test_dir.clone(), ShellType::Bash, Platform::Linux);
 
         assert!(result.is_ok());
 

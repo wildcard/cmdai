@@ -9,6 +9,10 @@
 //! - [`safety`] - Safety validation with dangerous command detection
 //! - [`backends`] - Command generation backends (Mock, Ollama, vLLM, MLX)
 //! - [`cli`] - CLI interface and argument parsing
+//! - [`cache`] - Model caching with integrity validation
+//! - [`config`] - Configuration management with TOML support
+//! - [`execution`] - Execution context capture and shell detection
+//! - [`logging`] - Structured logging with sensitive data redaction
 //!
 //! # Example
 //!
@@ -37,3 +41,9 @@ pub use models::{
     ExecutionContext, GeneratedCommand, LogEntry, LogLevel, Platform, RiskLevel, SafetyLevel,
     ShellType, UserConfiguration, UserConfigurationBuilder,
 };
+
+// Re-export infrastructure module types and errors
+pub use cache::{CacheError, CacheManager, CacheStats, IntegrityReport};
+pub use config::{ConfigError, ConfigManager};
+pub use execution::{ExecutionError, PlatformDetector, ShellDetector};
+pub use logging::{LogConfig, LogConfigBuilder, LogError, LogFormat, LogOutput, Logger, Redaction};

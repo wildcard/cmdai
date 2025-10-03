@@ -43,7 +43,9 @@ impl ConfigManager {
     /// Create a new ConfigManager with default XDG config directory
     pub fn new() -> Result<Self, ConfigError> {
         let config_dir = dirs::config_dir()
-            .ok_or_else(|| ConfigError::DirectoryError("Could not determine config directory".to_string()))?
+            .ok_or_else(|| {
+                ConfigError::DirectoryError("Could not determine config directory".to_string())
+            })?
             .join("cmdai");
 
         // Create config directory if it doesn't exist
@@ -89,8 +91,9 @@ impl ConfigManager {
         let config: UserConfiguration = toml::from_str(&contents)?;
 
         // Validate configuration
-        config.validate()
-            .map_err(|e| ConfigError::ValidationError(e))?;
+        config
+            .validate()
+            .map_err(ConfigError::ValidationError)?;
 
         Ok(config)
     }
@@ -98,8 +101,9 @@ impl ConfigManager {
     /// Save configuration to file
     pub fn save(&self, config: &UserConfiguration) -> Result<(), ConfigError> {
         // Validate before saving
-        config.validate()
-            .map_err(|e| ConfigError::ValidationError(e))?;
+        config
+            .validate()
+            .map_err(ConfigError::ValidationError)?;
 
         let toml_string = toml::to_string_pretty(config)?;
         std::fs::write(&self.config_path, toml_string)?;
@@ -108,23 +112,28 @@ impl ConfigManager {
     }
 
     /// Merge CLI arguments with file config (CLI takes precedence)
-    pub fn merge_with_cli(&self, cli_safety: Option<&str>, cli_shell: Option<&str>, cli_log_level: Option<&str>) -> Result<UserConfiguration, ConfigError> {
+    pub fn merge_with_cli(
+        &self,
+        cli_safety: Option<&str>,
+        cli_shell: Option<&str>,
+        cli_log_level: Option<&str>,
+    ) -> Result<UserConfiguration, ConfigError> {
         let mut config = self.load()?;
 
         // Override with CLI args if provided
         if let Some(safety_str) = cli_safety {
-            config.safety_level = SafetyLevel::from_str(safety_str)
-                .map_err(|e| ConfigError::ValidationError(e))?;
+            config.safety_level =
+                SafetyLevel::from_str(safety_str).map_err(ConfigError::ValidationError)?;
         }
 
         if let Some(shell_str) = cli_shell {
-            config.default_shell = Some(ShellType::from_str(shell_str)
-                .map_err(|e| ConfigError::ValidationError(e))?);
+            config.default_shell =
+                Some(ShellType::from_str(shell_str).map_err(ConfigError::ValidationError)?);
         }
 
         if let Some(log_str) = cli_log_level {
-            config.log_level = LogLevel::from_str(log_str)
-                .map_err(|e| ConfigError::ValidationError(e))?;
+            config.log_level =
+                LogLevel::from_str(log_str).map_err(ConfigError::ValidationError)?;
         }
 
         Ok(config)
@@ -136,18 +145,18 @@ impl ConfigManager {
 
         // Check for environment variable overrides
         if let Ok(safety_str) = std::env::var("CMDAI_SAFETY_LEVEL") {
-            config.safety_level = SafetyLevel::from_str(&safety_str)
-                .map_err(|e| ConfigError::ValidationError(e))?;
+            config.safety_level =
+                SafetyLevel::from_str(&safety_str).map_err(ConfigError::ValidationError)?;
         }
 
         if let Ok(shell_str) = std::env::var("CMDAI_DEFAULT_SHELL") {
-            config.default_shell = Some(ShellType::from_str(&shell_str)
-                .map_err(|e| ConfigError::ValidationError(e))?);
+            config.default_shell =
+                Some(ShellType::from_str(&shell_str).map_err(ConfigError::ValidationError)?);
         }
 
         if let Ok(log_str) = std::env::var("CMDAI_LOG_LEVEL") {
-            config.log_level = LogLevel::from_str(&log_str)
-                .map_err(|e| ConfigError::ValidationError(e))?;
+            config.log_level =
+                LogLevel::from_str(&log_str).map_err(ConfigError::ValidationError)?;
         }
 
         if let Ok(model_str) = std::env::var("CMDAI_DEFAULT_MODEL") {
@@ -155,8 +164,9 @@ impl ConfigManager {
         }
 
         if let Ok(cache_str) = std::env::var("CMDAI_CACHE_MAX_SIZE_GB") {
-            config.cache_max_size_gb = cache_str.parse()
-                .map_err(|_| ConfigError::ValidationError(format!("Invalid cache size: {}", cache_str)))?;
+            config.cache_max_size_gb = cache_str.parse().map_err(|_| {
+                ConfigError::ValidationError(format!("Invalid cache size: {}", cache_str))
+            })?;
         }
 
         Ok(config)
@@ -180,7 +190,10 @@ impl ConfigManager {
                     for key in section_table.keys() {
                         let full_key = format!("{}.{}", section, key);
                         if let Some(new_key) = self.schema.deprecated_keys.get(&full_key) {
-                            warnings.push(format!("Deprecated key '{}' (use '{}' instead)", full_key, new_key));
+                            warnings.push(format!(
+                                "Deprecated key '{}' (use '{}' instead)",
+                                full_key, new_key
+                            ));
                         }
                     }
                 }

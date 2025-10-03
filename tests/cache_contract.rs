@@ -30,11 +30,17 @@ async fn test_cache_manager_with_custom_dir() {
 
     let result = CacheManager::with_cache_dir(custom_path.clone());
 
-    assert!(result.is_ok(), "CacheManager with custom dir should succeed");
+    assert!(
+        result.is_ok(),
+        "CacheManager with custom dir should succeed"
+    );
     let cache_manager = result.unwrap();
 
     let stats = cache_manager.stats();
-    assert_eq!(stats.cache_dir, custom_path, "Should use custom cache directory");
+    assert_eq!(
+        stats.cache_dir, custom_path,
+        "Should use custom cache directory"
+    );
 }
 
 #[tokio::test]
@@ -66,7 +72,10 @@ async fn test_get_model_downloads_uncached_model() {
     let cache_manager = CacheManager::with_cache_dir(temp_dir.path().to_path_buf()).unwrap();
 
     let model_id = "new-test-model";
-    assert!(!cache_manager.is_cached(model_id), "Model should not be cached initially");
+    assert!(
+        !cache_manager.is_cached(model_id),
+        "Model should not be cached initially"
+    );
 
     let result = cache_manager.get_model(model_id).await;
 
@@ -75,7 +84,10 @@ async fn test_get_model_downloads_uncached_model() {
     match result {
         Ok(path) => {
             assert!(path.exists(), "Downloaded model should exist");
-            assert!(cache_manager.is_cached(model_id), "Model should be cached after download");
+            assert!(
+                cache_manager.is_cached(model_id),
+                "Model should be cached after download"
+            );
         }
         Err(CacheError::DownloadFailed(_)) => {
             // Expected in test environment without network
@@ -93,11 +105,16 @@ async fn test_get_model_fails_offline_for_uncached() {
     // Attempt to get uncached model (will fail due to no network in test)
     let result = cache_manager.get_model("uncached-model").await;
 
-    assert!(result.is_err(), "Should fail for uncached model without network");
+    assert!(
+        result.is_err(),
+        "Should fail for uncached model without network"
+    );
     match result.unwrap_err() {
         CacheError::DownloadFailed(msg) => {
-            assert!(msg.contains("network") || msg.contains("connection"),
-                   "Error should mention network issue");
+            assert!(
+                msg.contains("network") || msg.contains("connection"),
+                "Error should mention network issue"
+            );
         }
         _ => panic!("Should return DownloadFailed error"),
     }
@@ -122,9 +139,17 @@ async fn test_get_model_detects_corrupted_cache() {
     let result = cache_manager.get_model(model_id).await;
 
     // Contract: If checksum fails, should return ChecksumMismatch error
-    if let Err(CacheError::ChecksumMismatch { model_id: id, expected, actual }) = &result {
+    if let Err(CacheError::ChecksumMismatch {
+        model_id: id,
+        expected,
+        actual,
+    }) = &result
+    {
         assert_eq!(id, model_id);
-        assert_ne!(expected, actual, "Expected and actual checksums should differ");
+        assert_ne!(
+            expected, actual,
+            "Expected and actual checksums should differ"
+        );
     }
 }
 
@@ -137,7 +162,10 @@ async fn test_is_cached_returns_accurate_status() {
     let model_id = "test-cached-model";
 
     // Initially not cached
-    assert!(!cache_manager.is_cached(model_id), "Should not be cached initially");
+    assert!(
+        !cache_manager.is_cached(model_id),
+        "Should not be cached initially"
+    );
 
     // After download, should be cached
     let _ = cache_manager.get_model(model_id).await;
@@ -171,10 +199,16 @@ async fn test_remove_model_frees_disk_space() {
     assert!(remove_result.is_ok(), "Model removal should succeed");
 
     // Verify removal
-    assert!(!cache_manager.is_cached(model_id), "Model should no longer be cached");
+    assert!(
+        !cache_manager.is_cached(model_id),
+        "Model should no longer be cached"
+    );
 
     let stats_after = cache_manager.stats();
-    assert!(stats_after.total_size_bytes < size_before, "Cache size should decrease");
+    assert!(
+        stats_after.total_size_bytes < size_before,
+        "Cache size should decrease"
+    );
 }
 
 #[tokio::test]
@@ -197,7 +231,10 @@ async fn test_clear_cache_removes_all_models() {
     assert_eq!(stats.total_size_bytes, 0, "Cache size should be zero");
 
     // Cache directory should still exist
-    assert!(stats.cache_dir.exists(), "Cache directory should still exist");
+    assert!(
+        stats.cache_dir.exists(),
+        "Cache directory should still exist"
+    );
 }
 
 #[tokio::test]
@@ -226,13 +263,19 @@ async fn test_validate_integrity_detects_corruption() {
     // Validate integrity
     let integrity_result = cache_manager.validate_integrity().await;
 
-    assert!(integrity_result.is_ok(), "Integrity validation should succeed");
+    assert!(
+        integrity_result.is_ok(),
+        "Integrity validation should succeed"
+    );
 
     let report = integrity_result.unwrap();
 
     // Report should contain valid/corrupted/missing lists
-    assert!(report.valid_models.len() + report.corrupted_models.len() + report.missing_models.len() >= 0,
-           "Report should contain model lists");
+    assert!(
+        report.valid_models.len() + report.corrupted_models.len() + report.missing_models.len()
+            >= 0,
+        "Report should contain model lists"
+    );
 }
 
 #[tokio::test]
@@ -241,12 +284,18 @@ async fn test_cache_directory_creation() {
     let temp_dir = TempDir::new().unwrap();
     let non_existent_dir = temp_dir.path().join("new_cache_dir");
 
-    assert!(!non_existent_dir.exists(), "Directory should not exist initially");
+    assert!(
+        !non_existent_dir.exists(),
+        "Directory should not exist initially"
+    );
 
     let result = CacheManager::with_cache_dir(non_existent_dir.clone());
 
     assert!(result.is_ok(), "Should create cache directory");
-    assert!(non_existent_dir.exists(), "Cache directory should be created");
+    assert!(
+        non_existent_dir.exists(),
+        "Cache directory should be created"
+    );
     assert!(non_existent_dir.is_dir(), "Should be a directory");
 }
 
@@ -268,7 +317,11 @@ async fn test_concurrent_access_safety() {
     // At least one should succeed (or both fail due to network in test env)
     // Contract: No corrupted state from concurrent access
     if result_1.is_ok() && result_2.is_ok() {
-        assert_eq!(result_1.unwrap(), result_2.unwrap(), "Both should return same path");
+        assert_eq!(
+            result_1.unwrap(),
+            result_2.unwrap(),
+            "Both should return same path"
+        );
     }
 }
 

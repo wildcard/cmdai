@@ -194,7 +194,10 @@ fn test_redaction_redacts_api_keys() {
     let redacted = Redaction::redact(text);
 
     assert!(!redacted.contains("sk_test_12345"), "Should redact API key");
-    assert!(redacted.contains("[REDACTED"), "Should show redaction marker");
+    assert!(
+        redacted.contains("[REDACTED"),
+        "Should show redaction marker"
+    );
 }
 
 #[test]
@@ -204,7 +207,10 @@ fn test_redaction_redacts_tokens() {
     let redacted = Redaction::redact(text);
 
     assert!(!redacted.contains("ghp_abc123xyz"), "Should redact token");
-    assert!(redacted.contains("[REDACTED"), "Should show redaction marker");
+    assert!(
+        redacted.contains("[REDACTED"),
+        "Should show redaction marker"
+    );
 }
 
 #[test]
@@ -213,8 +219,14 @@ fn test_redaction_redacts_passwords() {
     let text = r#"password="mysecretpass123""#;
     let redacted = Redaction::redact(text);
 
-    assert!(!redacted.contains("mysecretpass123"), "Should redact password");
-    assert!(redacted.contains("[REDACTED"), "Should show redaction marker");
+    assert!(
+        !redacted.contains("mysecretpass123"),
+        "Should redact password"
+    );
+    assert!(
+        redacted.contains("[REDACTED"),
+        "Should show redaction marker"
+    );
 }
 
 #[test]
@@ -250,7 +262,9 @@ fn test_redaction_contains_sensitive_data() {
     assert!(Redaction::contains_sensitive_data("api_key=secret"));
     assert!(Redaction::contains_sensitive_data("token: abc123"));
     assert!(Redaction::contains_sensitive_data("password=pass"));
-    assert!(Redaction::contains_sensitive_data("AWS_SECRET_ACCESS_KEY=xyz"));
+    assert!(Redaction::contains_sensitive_data(
+        "AWS_SECRET_ACCESS_KEY=xyz"
+    ));
 
     assert!(!Redaction::contains_sensitive_data("normal text"));
     assert!(!Redaction::contains_sensitive_data("user=john"));
@@ -267,8 +281,10 @@ fn test_redaction_add_pattern() {
     let text = "credit_card=1234-5678-9012-3456";
     let redacted = Redaction::redact(text);
 
-    assert!(!redacted.contains("1234-5678-9012-3456"),
-           "Custom pattern should redact");
+    assert!(
+        !redacted.contains("1234-5678-9012-3456"),
+        "Custom pattern should redact"
+    );
 }
 
 #[test]
@@ -324,9 +340,11 @@ fn test_non_blocking_logging() {
     let duration = start.elapsed();
 
     // Should be fast (non-blocking)
-    assert!(duration.as_millis() < 100,
-           "Logging 1000 operations should be <100ms (non-blocking), took {}ms",
-           duration.as_millis());
+    assert!(
+        duration.as_millis() < 100,
+        "Logging 1000 operations should be <100ms (non-blocking), took {}ms",
+        duration.as_millis()
+    );
 }
 
 #[test]

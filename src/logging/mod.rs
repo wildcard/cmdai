@@ -98,6 +98,12 @@ pub struct LogConfigBuilder {
     config: LogConfig,
 }
 
+impl Default for LogConfigBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl LogConfigBuilder {
     pub fn new() -> Self {
         Self {
@@ -162,8 +168,6 @@ pub struct OperationSpan {
 
 impl OperationSpan {
     pub fn new(name: impl Into<String>) -> Self {
-        Self {
-            _name: name.into(),
-        }
+        Self { _name: name.into() }
     }
 }

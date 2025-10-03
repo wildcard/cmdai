@@ -21,8 +21,14 @@ impl SchemaValidator {
 impl Default for ConfigSchema {
     fn default() -> Self {
         let mut known_keys = HashMap::new();
-        known_keys.insert("general.safety_level".to_string(), "SafetyLevel enum".to_string());
-        known_keys.insert("general.default_shell".to_string(), "ShellType enum".to_string());
+        known_keys.insert(
+            "general.safety_level".to_string(),
+            "SafetyLevel enum".to_string(),
+        );
+        known_keys.insert(
+            "general.default_shell".to_string(),
+            "ShellType enum".to_string(),
+        );
         known_keys.insert("general.default_model".to_string(), "String".to_string());
         known_keys.insert("logging.log_level".to_string(), "LogLevel enum".to_string());
         known_keys.insert("logging.log_rotation_days".to_string(), "u32".to_string());

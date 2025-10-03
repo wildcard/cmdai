@@ -79,7 +79,7 @@ impl std::str::FromStr for OutputFormat {
 }
 
 /// Timing information for performance tracking
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct TimingInfo {
     pub generation_time_ms: u64,
     pub execution_time_ms: u64,
@@ -331,15 +331,6 @@ impl Default for CliConfig {
     }
 }
 
-impl Default for TimingInfo {
-    fn default() -> Self {
-        Self {
-            generation_time_ms: 0,
-            execution_time_ms: 0,
-            total_time_ms: 0,
-        }
-    }
-}
 
 /// Errors that can occur during CLI operations
 #[derive(Debug, thiserror::Error, Serialize, Deserialize)]

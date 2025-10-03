@@ -27,7 +27,10 @@ fn test_config_manager_new() {
 
     // Verify config path is set to XDG location
     let config_path = config_manager.config_path();
-    assert!(config_path.to_str().unwrap().contains("cmdai"), "Config path should contain cmdai");
+    assert!(
+        config_path.to_str().unwrap().contains("cmdai"),
+        "Config path should contain cmdai"
+    );
 }
 
 #[test]
@@ -38,11 +41,17 @@ fn test_config_manager_with_custom_path() {
 
     let result = ConfigManager::with_config_path(custom_path.clone());
 
-    assert!(result.is_ok(), "ConfigManager with custom path should succeed");
+    assert!(
+        result.is_ok(),
+        "ConfigManager with custom path should succeed"
+    );
     let config_manager = result.unwrap();
 
-    assert_eq!(config_manager.config_path(), custom_path.as_path(),
-               "Should use custom config path");
+    assert_eq!(
+        config_manager.config_path(),
+        custom_path.as_path(),
+        "Should use custom config path"
+    );
 }
 
 #[test]
@@ -54,13 +63,30 @@ fn test_load_returns_defaults_when_missing() {
     let config_manager = ConfigManager::with_config_path(non_existent).unwrap();
     let result = config_manager.load();
 
-    assert!(result.is_ok(), "load() should succeed with defaults when file missing");
+    assert!(
+        result.is_ok(),
+        "load() should succeed with defaults when file missing"
+    );
 
     let config = result.unwrap();
-    assert_eq!(config.safety_level, SafetyLevel::Moderate, "Default safety should be Moderate");
-    assert_eq!(config.log_level, LogLevel::Info, "Default log level should be Info");
-    assert_eq!(config.cache_max_size_gb, 10, "Default cache size should be 10GB");
-    assert_eq!(config.log_rotation_days, 7, "Default log rotation should be 7 days");
+    assert_eq!(
+        config.safety_level,
+        SafetyLevel::Moderate,
+        "Default safety should be Moderate"
+    );
+    assert_eq!(
+        config.log_level,
+        LogLevel::Info,
+        "Default log level should be Info"
+    );
+    assert_eq!(
+        config.cache_max_size_gb, 10,
+        "Default cache size should be 10GB"
+    );
+    assert_eq!(
+        config.log_rotation_days, 7,
+        "Default log rotation should be 7 days"
+    );
 }
 
 #[test]
@@ -142,9 +168,16 @@ safety_level = "high"
     assert!(result.is_err(), "Should fail on invalid enum value");
 
     if let Err(ConfigError::InvalidValue { key, reason }) = result {
-        assert!(key.contains("safety_level"), "Error should mention safety_level");
-        assert!(reason.contains("Strict") || reason.contains("Moderate") || reason.contains("Permissive"),
-                "Error should list valid options");
+        assert!(
+            key.contains("safety_level"),
+            "Error should mention safety_level"
+        );
+        assert!(
+            reason.contains("Strict")
+                || reason.contains("Moderate")
+                || reason.contains("Permissive"),
+            "Error should list valid options"
+        );
     } else {
         panic!("Expected InvalidValue error");
     }
@@ -169,7 +202,10 @@ some_future_feature = true
     let result = config_manager.load();
 
     // Should succeed despite unknown section
-    assert!(result.is_ok(), "Should succeed with unknown section (forward compatibility)");
+    assert!(
+        result.is_ok(),
+        "Should succeed with unknown section (forward compatibility)"
+    );
 }
 
 #[test]
@@ -223,14 +259,19 @@ fn test_save_overwrites_existing() {
 
     // Verify only second config persists
     let loaded = config_manager.load().unwrap();
-    assert_eq!(loaded.safety_level, SafetyLevel::Strict, "Should have latest saved value");
+    assert_eq!(
+        loaded.safety_level,
+        SafetyLevel::Strict,
+        "Should have latest saved value"
+    );
 }
 
 #[test]
 fn test_merge_with_cli_args_prioritizes_cli() {
     // CONTRACT: merge_with_cli_args() gives CLI args precedence over config
     let temp_dir = TempDir::new().unwrap();
-    let config_manager = ConfigManager::with_config_path(temp_dir.path().join("test.toml")).unwrap();
+    let config_manager =
+        ConfigManager::with_config_path(temp_dir.path().join("test.toml")).unwrap();
 
     let config = UserConfiguration {
         safety_level: SafetyLevel::Moderate,
@@ -247,16 +288,29 @@ fn test_merge_with_cli_args_prioritizes_cli() {
 
     let merged = config_manager.merge_with_cli_args(config.clone(), &cli_args);
 
-    assert_eq!(merged.safety_level, SafetyLevel::Strict, "CLI safety should override config");
-    assert_eq!(merged.default_shell, Some(ShellType::Bash), "Config shell should remain (no CLI override)");
-    assert_eq!(merged.log_level, LogLevel::Debug, "CLI log level should override config");
+    assert_eq!(
+        merged.safety_level,
+        SafetyLevel::Strict,
+        "CLI safety should override config"
+    );
+    assert_eq!(
+        merged.default_shell,
+        Some(ShellType::Bash),
+        "Config shell should remain (no CLI override)"
+    );
+    assert_eq!(
+        merged.log_level,
+        LogLevel::Debug,
+        "CLI log level should override config"
+    );
 }
 
 #[test]
 fn test_merge_uses_config_defaults() {
     // CONTRACT: merge_with_cli_args() uses config values when CLI args not provided
     let temp_dir = TempDir::new().unwrap();
-    let config_manager = ConfigManager::with_config_path(temp_dir.path().join("test.toml")).unwrap();
+    let config_manager =
+        ConfigManager::with_config_path(temp_dir.path().join("test.toml")).unwrap();
 
     let config = UserConfiguration {
         safety_level: SafetyLevel::Strict,
@@ -272,14 +326,18 @@ fn test_merge_uses_config_defaults() {
 
     let merged = config_manager.merge_with_cli_args(config.clone(), &cli_args);
 
-    assert_eq!(merged, config, "Should use all config values when no CLI overrides");
+    assert_eq!(
+        merged, config,
+        "Should use all config values when no CLI overrides"
+    );
 }
 
 #[test]
 fn test_validate_accepts_valid_config() {
     // CONTRACT: validate() returns Ok for valid configuration
     let temp_dir = TempDir::new().unwrap();
-    let config_manager = ConfigManager::with_config_path(temp_dir.path().join("test.toml")).unwrap();
+    let config_manager =
+        ConfigManager::with_config_path(temp_dir.path().join("test.toml")).unwrap();
 
     let valid_config = UserConfiguration {
         safety_level: SafetyLevel::Moderate,
@@ -298,7 +356,8 @@ fn test_validate_accepts_valid_config() {
 fn test_validate_rejects_out_of_range() {
     // CONTRACT: validate() rejects out-of-range values
     let temp_dir = TempDir::new().unwrap();
-    let config_manager = ConfigManager::with_config_path(temp_dir.path().join("test.toml")).unwrap();
+    let config_manager =
+        ConfigManager::with_config_path(temp_dir.path().join("test.toml")).unwrap();
 
     let invalid_config = UserConfiguration {
         cache_max_size_gb: 0, // Invalid: must be >= 1
@@ -383,14 +442,20 @@ fn test_config_operation_performance() {
     let _ = config_manager.load();
     let duration = start.elapsed();
 
-    assert!(duration.as_millis() < 100,
-            "Config load should be <100ms, took {}ms", duration.as_millis());
+    assert!(
+        duration.as_millis() < 100,
+        "Config load should be <100ms, took {}ms",
+        duration.as_millis()
+    );
 
     // Test validate performance (<1ms)
     let start = Instant::now();
     let _ = config_manager.validate(&config);
     let duration = start.elapsed();
 
-    assert!(duration.as_millis() < 10,
-            "Config validate should be <10ms, took {}ms", duration.as_millis());
+    assert!(
+        duration.as_millis() < 10,
+        "Config validate should be <10ms, took {}ms",
+        duration.as_millis()
+    );
 }

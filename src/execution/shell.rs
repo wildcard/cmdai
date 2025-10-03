@@ -37,6 +37,12 @@ pub struct ShellDetector {
     override_shell: Option<ShellType>,
 }
 
+impl Default for ShellDetector {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ShellDetector {
     /// Create a new ShellDetector
     pub fn new() -> Self {

@@ -56,8 +56,9 @@ impl ManifestManager {
     pub fn save(&mut self) -> Result<(), CacheError> {
         self.manifest.last_updated = Utc::now();
 
-        let contents = serde_json::to_string_pretty(&self.manifest)
-            .map_err(|e| CacheError::ManifestError(format!("Failed to serialize manifest: {}", e)))?;
+        let contents = serde_json::to_string_pretty(&self.manifest).map_err(|e| {
+            CacheError::ManifestError(format!("Failed to serialize manifest: {}", e))
+        })?;
 
         std::fs::write(&self.manifest_path, contents)?;
 
@@ -75,7 +76,11 @@ impl ManifestManager {
     }
 
     /// Add a model to the manifest
-    pub fn add_model(&mut self, model_id: String, cached_model: CachedModel) -> Result<(), CacheError> {
+    pub fn add_model(
+        &mut self,
+        model_id: String,
+        cached_model: CachedModel,
+    ) -> Result<(), CacheError> {
         // Update total size
         self.manifest.total_size_bytes += cached_model.size_bytes;
 
@@ -96,7 +101,10 @@ impl ManifestManager {
     /// Remove a model from the manifest
     pub fn remove_model(&mut self, model_id: &str) -> Result<(), CacheError> {
         if let Some(cached_model) = self.manifest.models.remove(model_id) {
-            self.manifest.total_size_bytes = self.manifest.total_size_bytes.saturating_sub(cached_model.size_bytes);
+            self.manifest.total_size_bytes = self
+                .manifest
+                .total_size_bytes
+                .saturating_sub(cached_model.size_bytes);
             self.save()?;
         }
 
@@ -134,7 +142,10 @@ impl ManifestManager {
 
     /// Recalculate total size from all models
     fn recalculate_total_size(&mut self) {
-        self.manifest.total_size_bytes = self.manifest.models.values()
+        self.manifest.total_size_bytes = self
+            .manifest
+            .models
+            .values()
             .map(|model| model.size_bytes)
             .sum();
     }

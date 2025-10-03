@@ -359,6 +359,31 @@ Your PR will use the template from `.github/PULL_REQUEST_TEMPLATE.md`. Include:
 
 We welcome contributions in these areas:
 
+### 🟢 Good First Issues & Technical Debt
+
+**New to the project?** Start here! We maintain a curated list of beginner-friendly issues and technical debt items in [TECH_DEBT.md](TECH_DEBT.md).
+
+**Current opportunities**:
+- 📝 **Documentation** - Add rustdoc examples to public APIs ([#7](https://github.com/wildcard/cmdai/issues/7))
+- 🧪 **Testing** - Add property-based tests for LRU eviction ([#8](https://github.com/wildcard/cmdai/issues/8))
+- 📊 **Benchmarking** - Create performance benchmark suite ([#9](https://github.com/wildcard/cmdai/issues/9))
+- 🔧 **Tooling** - Generate JSON schema for config validation ([#11](https://github.com/wildcard/cmdai/issues/11))
+
+**Looking for a bigger challenge?**
+- 🚀 **Feature 004** - Implement Hugging Face model downloads ([#10](https://github.com/wildcard/cmdai/issues/10))
+- 🔒 **Security** - Add file permission hardening ([#6](https://github.com/wildcard/cmdai/issues/6))
+- ✅ **Test Alignment** - Fix contract test API mismatches ([#4](https://github.com/wildcard/cmdai/issues/4))
+
+**How to claim an issue**:
+1. Comment on the issue saying you'd like to work on it
+2. Wait for maintainer assignment (usually < 24 hours)
+3. Ask questions in the issue thread
+4. Submit your PR when ready!
+
+See [TECH_DEBT.md](TECH_DEBT.md) for the complete list with detailed implementation guides.
+
+---
+
 ### Backend Implementations
 
 Expand LLM backend support:

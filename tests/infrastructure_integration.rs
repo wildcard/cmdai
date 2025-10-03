@@ -211,7 +211,7 @@ async fn test_context_aware_generation() {
 
     // THEN: Context does not leak sensitive environment variables
     let env_vars = context.environment_vars();
-    for (key, _) in env_vars {
+    for key in env_vars.keys() {
         assert!(
             !key.to_uppercase().contains("API_KEY"),
             "API_KEY should be filtered from context"

@@ -441,8 +441,10 @@ async fn test_concurrent_validation() {
 #[tokio::test]
 async fn test_configuration_validation() {
     // CONTRACT: Invalid configurations should be rejected
-    let mut invalid_config = SafetyConfig::default();
-    invalid_config.max_command_length = 0; // Invalid
+    let invalid_config = SafetyConfig {
+        max_command_length: 0, // Invalid
+        ..Default::default()
+    };
 
     let result = SafetyValidator::new(invalid_config);
     assert!(result.is_err(), "Invalid configuration should be rejected");

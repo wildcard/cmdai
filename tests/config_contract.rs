@@ -347,7 +347,7 @@ fn test_merge_uses_config_defaults() {
 fn test_validate_accepts_valid_config() {
     // CONTRACT: validate() returns Ok for valid configuration
     let temp_dir = TempDir::new().unwrap();
-    let config_manager =
+    let _config_manager =
         ConfigManager::with_config_path(temp_dir.path().join("test.toml")).unwrap();
 
     let valid_config = UserConfiguration {

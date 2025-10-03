@@ -11,6 +11,7 @@ use cmdai::{
 };
 
 /// Mock CLI arguments for testing
+#[derive(Default)]
 struct TestArgs {
     prompt: Option<String>,
     shell: Option<String>,
@@ -19,20 +20,6 @@ struct TestArgs {
     confirm: bool,
     verbose: bool,
     config_file: Option<String>,
-}
-
-impl Default for TestArgs {
-    fn default() -> Self {
-        Self {
-            prompt: None,
-            shell: None,
-            safety: None,
-            output: None,
-            confirm: false,
-            verbose: false,
-            config_file: None,
-        }
-    }
 }
 
 impl IntoCliArgs for TestArgs {
@@ -144,7 +131,7 @@ async fn test_safety_confirmation_bypass() {
 
     // With confirmation, borderline commands should execute
     assert!(
-        cli_result.executed || !cli_result.blocked_reason.is_some(),
+        cli_result.executed || cli_result.blocked_reason.is_none(),
         "Confirmed commands should execute or provide clear reason"
     );
 }

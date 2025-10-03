@@ -132,7 +132,7 @@ fn test_shell_detector_uses_env_variable() {
     let detector = ShellDetector::new();
 
     // Get current SHELL value (if set)
-    if let Some(shell_path) = env::var("SHELL").ok() {
+    if let Ok(shell_path) = env::var("SHELL") {
         let detected = detector.detect_from_env();
 
         if shell_path.contains("bash") {

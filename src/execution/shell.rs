@@ -125,7 +125,8 @@ mod tests {
 
     #[test]
     fn test_shell_detector() {
-        let shell = ShellDetector::detect();
+        let detector = ShellDetector::new();
+        let shell = detector.detect();
         // Should detect some shell type (at least Unknown as fallback)
         assert!(matches!(
             shell,

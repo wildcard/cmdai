@@ -169,7 +169,7 @@ mod tests {
         let manifest_path = temp_dir.path().join("manifest.json");
 
         {
-            let manifest = ManifestManager::new(temp_dir.path().to_path_buf()).unwrap();
+            let _manifest = ManifestManager::new(temp_dir.path().to_path_buf()).unwrap();
             assert!(manifest_path.exists());
         }
 

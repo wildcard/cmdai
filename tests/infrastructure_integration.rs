@@ -155,9 +155,9 @@ async fn test_cli_argument_override() {
     // WHEN: CLI arguments are provided to override settings
     let merged_config = config_manager
         .merge_with_cli(
-            Some("strict"),       // Override safety level
-            Some("zsh"),          // Override shell
-            Some("debug"),        // Override log level
+            Some("strict"), // Override safety level
+            Some("zsh"),    // Override shell
+            Some("debug"),  // Override log level
         )
         .unwrap();
 
@@ -258,15 +258,8 @@ async fn test_structured_logging_operations() {
         LogLevel::Debug,
         "Log level should be Debug"
     );
-    assert_eq!(
-        log_config.format,
-        LogFormat::Json,
-        "Format should be JSON"
-    );
-    assert!(
-        log_config.redaction_enabled,
-        "Redaction should be enabled"
-    );
+    assert_eq!(log_config.format, LogFormat::Json, "Format should be JSON");
+    assert!(log_config.redaction_enabled, "Redaction should be enabled");
 
     // WHEN: Creating an operation span
     use cmdai::logging::OperationSpan;
@@ -344,12 +337,7 @@ async fn test_multiplatform_execution_context() {
 
     for (platform, shell) in test_cases {
         // WHEN: Creating context for specific platform
-        let context = ExecutionContext::new(
-            PathBuf::from("/test/path"),
-            shell,
-            platform,
-        )
-        .unwrap();
+        let context = ExecutionContext::new(PathBuf::from("/test/path"), shell, platform).unwrap();
 
         // THEN: Context reflects platform-specific details
         assert_eq!(

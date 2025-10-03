@@ -236,15 +236,13 @@ impl CacheManager {
                 .list_models()
                 .into_iter()
                 .filter_map(|model_id| {
-                    manifest
-                        .get_model(&model_id)
-                        .map(|cached_model| {
-                            (
-                                model_id.clone(),
-                                cached_model.path.clone(),
-                                cached_model.checksum.clone(),
-                            )
-                        })
+                    manifest.get_model(&model_id).map(|cached_model| {
+                        (
+                            model_id.clone(),
+                            cached_model.path.clone(),
+                            cached_model.checksum.clone(),
+                        )
+                    })
                 })
                 .collect()
         };

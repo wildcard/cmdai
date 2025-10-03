@@ -313,7 +313,6 @@ impl ShellType {
     pub fn is_windows(&self) -> bool {
         matches!(self, Self::PowerShell | Self::Cmd)
     }
-
 }
 
 impl Default for ShellType {
@@ -464,7 +463,6 @@ impl LogLevel {
             LogLevel::Error => tracing::Level::ERROR,
         }
     }
-
 }
 
 impl std::str::FromStr for LogLevel {

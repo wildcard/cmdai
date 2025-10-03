@@ -331,7 +331,6 @@ impl Default for CliConfig {
     }
 }
 
-
 /// Errors that can occur during CLI operations
 #[derive(Debug, thiserror::Error, Serialize, Deserialize)]
 pub enum CliError {

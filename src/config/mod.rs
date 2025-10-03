@@ -91,9 +91,7 @@ impl ConfigManager {
         let config: UserConfiguration = toml::from_str(&contents)?;
 
         // Validate configuration
-        config
-            .validate()
-            .map_err(ConfigError::ValidationError)?;
+        config.validate().map_err(ConfigError::ValidationError)?;
 
         Ok(config)
     }
@@ -101,9 +99,7 @@ impl ConfigManager {
     /// Save configuration to file
     pub fn save(&self, config: &UserConfiguration) -> Result<(), ConfigError> {
         // Validate before saving
-        config
-            .validate()
-            .map_err(ConfigError::ValidationError)?;
+        config.validate().map_err(ConfigError::ValidationError)?;
 
         let toml_string = toml::to_string_pretty(config)?;
         std::fs::write(&self.config_path, toml_string)?;
@@ -122,18 +118,15 @@ impl ConfigManager {
 
         // Override with CLI args if provided
         if let Some(safety_str) = cli_safety {
-            config.safety_level =
-                safety_str.parse().map_err(ConfigError::ValidationError)?;
+            config.safety_level = safety_str.parse().map_err(ConfigError::ValidationError)?;
         }
 
         if let Some(shell_str) = cli_shell {
-            config.default_shell =
-                Some(shell_str.parse().map_err(ConfigError::ValidationError)?);
+            config.default_shell = Some(shell_str.parse().map_err(ConfigError::ValidationError)?);
         }
 
         if let Some(log_str) = cli_log_level {
-            config.log_level =
-                log_str.parse().map_err(ConfigError::ValidationError)?;
+            config.log_level = log_str.parse().map_err(ConfigError::ValidationError)?;
         }
 
         Ok(config)
@@ -145,18 +138,15 @@ impl ConfigManager {
 
         // Check for environment variable overrides
         if let Ok(safety_str) = std::env::var("CMDAI_SAFETY_LEVEL") {
-            config.safety_level =
-                safety_str.parse().map_err(ConfigError::ValidationError)?;
+            config.safety_level = safety_str.parse().map_err(ConfigError::ValidationError)?;
         }
 
         if let Ok(shell_str) = std::env::var("CMDAI_DEFAULT_SHELL") {
-            config.default_shell =
-                Some(shell_str.parse().map_err(ConfigError::ValidationError)?);
+            config.default_shell = Some(shell_str.parse().map_err(ConfigError::ValidationError)?);
         }
 
         if let Ok(log_str) = std::env::var("CMDAI_LOG_LEVEL") {
-            config.log_level =
-                log_str.parse().map_err(ConfigError::ValidationError)?;
+            config.log_level = log_str.parse().map_err(ConfigError::ValidationError)?;
         }
 
         if let Ok(model_str) = std::env::var("CMDAI_DEFAULT_MODEL") {

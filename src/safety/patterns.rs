@@ -382,22 +382,21 @@ pub fn get_patterns_by_risk(min_risk: RiskLevel) -> Vec<&'static DangerPattern> 
 type CompiledPattern = (Regex, RiskLevel, String, Option<ShellType>);
 
 /// Compiled regex patterns for performance (cached at startup)
-pub static COMPILED_PATTERNS: Lazy<Vec<CompiledPattern>> =
-    Lazy::new(|| {
-        DANGEROUS_PATTERNS
-            .iter()
-            .filter_map(|pattern| {
-                Regex::new(&pattern.pattern).ok().map(|regex| {
-                    (
-                        regex,
-                        pattern.risk_level,
-                        pattern.description.clone(),
-                        pattern.shell_specific,
-                    )
-                })
+pub static COMPILED_PATTERNS: Lazy<Vec<CompiledPattern>> = Lazy::new(|| {
+    DANGEROUS_PATTERNS
+        .iter()
+        .filter_map(|pattern| {
+            Regex::new(&pattern.pattern).ok().map(|regex| {
+                (
+                    regex,
+                    pattern.risk_level,
+                    pattern.description.clone(),
+                    pattern.shell_specific,
+                )
             })
-            .collect()
-    });
+        })
+        .collect()
+});
 
 /// Get compiled patterns for a specific shell type
 pub fn get_compiled_patterns_for_shell(

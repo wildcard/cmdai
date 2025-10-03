@@ -39,9 +39,10 @@ mod tests {
 
     #[test]
     fn test_redact_token() {
-        let text = "Authorization: Bearer abc123token";
+        let text = "Using token=abc123token for auth";
         let redacted = Redaction::redact(text);
         assert!(!redacted.contains("abc123token"));
+        assert!(redacted.contains("***REDACTED***"));
     }
 
     #[test]

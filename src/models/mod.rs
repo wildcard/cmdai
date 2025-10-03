@@ -390,3 +390,99 @@ impl BackendInfo {
 }
 
 // All types are public through mod.rs exports
+
+// ============================================================================
+// Infrastructure Models (Feature 003)
+// ============================================================================
+
+use chrono::{DateTime, Utc};
+use std::collections::HashMap;
+use std::path::PathBuf;
+
+/// Platform operating system type
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum Platform {
+    Linux,
+    MacOS,
+    Windows,
+}
+
+impl Platform {
+    /// Detect current platform at runtime
+    pub fn detect() -> Self {
+        #[cfg(target_os = "linux")]
+        return Platform::Linux;
+
+        #[cfg(target_os = "macos")]
+        return Platform::MacOS;
+
+        #[cfg(target_os = "windows")]
+        return Platform::Windows;
+
+        #[cfg(not(any(target_os = "linux", target_os = "macos", target_os = "windows")))]
+        compile_error!("Unsupported platform");
+    }
+
+    /// Check if platform is POSIX-compliant
+    pub fn is_posix(&self) -> bool {
+        matches!(self, Platform::Linux | Platform::MacOS)
+    }
+}
+
+impl std::fmt::Display for Platform {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Platform::Linux => write!(f, "Linux"),
+            Platform::MacOS => write!(f, "macOS"),
+            Platform::Windows => write!(f, "Windows"),
+        }
+    }
+}
+
+/// Log severity level
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
+#[serde(rename_all = "lowercase")]
+pub enum LogLevel {
+    Debug,
+    Info,
+    Warn,
+    Error,
+}
+
+impl LogLevel {
+    /// Convert to tracing Level
+    pub fn to_tracing_level(&self) -> tracing::Level {
+        match self {
+            LogLevel::Debug => tracing::Level::DEBUG,
+            LogLevel::Info => tracing::Level::INFO,
+            LogLevel::Warn => tracing::Level::WARN,
+            LogLevel::Error => tracing::Level::ERROR,
+        }
+    }
+
+    /// Parse from string (case-insensitive)
+    pub fn from_str(s: &str) -> Result<Self, String> {
+        match s.to_lowercase().as_str() {
+            "debug" => Ok(LogLevel::Debug),
+            "info" => Ok(LogLevel::Info),
+            "warn" | "warning" => Ok(LogLevel::Warn),
+            "error" | "err" => Ok(LogLevel::Error),
+            _ => Err(format!(
+                "Invalid log level '{}'. Valid options: debug, info, warn, error",
+                s
+            )),
+        }
+    }
+}
+
+impl std::fmt::Display for LogLevel {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            LogLevel::Debug => write!(f, "DEBUG"),
+            LogLevel::Info => write!(f, "INFO"),
+            LogLevel::Warn => write!(f, "WARN"),
+            LogLevel::Error => write!(f, "ERROR"),
+        }
+    }
+}

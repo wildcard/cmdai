@@ -1,0 +1,49 @@
+//! Sensitive data redaction for logs
+
+use regex::Regex;
+use once_cell::sync::Lazy;
+
+static API_KEY_PATTERN: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(r#"(api[_-]?key|token|secret|password|passwd)[\s:=]+["']?([a-zA-Z0-9_-]+)["']?"#).unwrap()
+});
+
+/// Redaction utilities
+pub struct Redaction;
+
+impl Redaction {
+    /// Redact sensitive data from a string
+    pub fn redact(text: &str) -> String {
+        API_KEY_PATTERN.replace_all(text, "$1=***REDACTED***").to_string()
+    }
+
+    /// Check if text contains sensitive data
+    pub fn contains_sensitive(text: &str) -> bool {
+        API_KEY_PATTERN.is_match(text)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_redact_api_key() {
+        let text = "Using api_key=sk_test_12345 for request";
+        let redacted = Redaction::redact(text);
+        assert!(!redacted.contains("sk_test_12345"));
+        assert!(redacted.contains("***REDACTED***"));
+    }
+
+    #[test]
+    fn test_redact_token() {
+        let text = "Authorization: Bearer abc123token";
+        let redacted = Redaction::redact(text);
+        assert!(!redacted.contains("abc123token"));
+    }
+
+    #[test]
+    fn test_contains_sensitive() {
+        assert!(Redaction::contains_sensitive("api_key=secret"));
+        assert!(!Redaction::contains_sensitive("normal log message"));
+    }
+}

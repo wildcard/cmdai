@@ -790,15 +790,34 @@ impl ExecutionContext {
             return Err("Current directory must be absolute path".to_string());
         }
 
+        // Capture and filter environment variables
+        let environment_vars = Self::filter_env_vars();
+
         Ok(Self {
             current_dir,
             shell_type,
             platform,
-            environment_vars: HashMap::new(),
+            environment_vars,
             username: std::env::var("USER").or_else(|_| std::env::var("USERNAME")).unwrap_or_else(|_| "unknown".to_string()),
             hostname: std::env::var("HOSTNAME").or_else(|_| std::env::var("COMPUTERNAME")).unwrap_or_else(|_| "unknown".to_string()),
             captured_at: Utc::now(),
         })
+    }
+
+    /// Filter environment variables to exclude sensitive data
+    fn filter_env_vars() -> HashMap<String, String> {
+        let sensitive_patterns = [
+            "API_KEY", "TOKEN", "SECRET", "PASSWORD", "PASSWD",
+            "CREDENTIAL", "AUTH", "PRIVATE", "KEY",
+        ];
+
+        std::env::vars()
+            .filter(|(key, value)| {
+                // Filter out sensitive variables and empty values
+                !key.is_empty() && !value.is_empty() &&
+                !sensitive_patterns.iter().any(|pattern| key.to_uppercase().contains(pattern))
+            })
+            .collect()
     }
 
     /// Serialize context for LLM prompt

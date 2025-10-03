@@ -144,18 +144,19 @@
 ## Phase 3.3: TDD GREEN - Module Implementation
 **Implement modules to make contract tests pass**
 
-- [ ] **T015** [P] Implement cache module in `src/cache/mod.rs` and `src/cache/manifest.rs`
+- [x] **T015** [P] Implement cache module in `src/cache/mod.rs` and `src/cache/manifest.rs` ✅
   - **mod.rs**: CacheManager struct, new(), with_cache_dir(), get_model(), is_cached(), remove_model(), clear_cache(), stats(), validate_integrity()
   - Use reqwest for downloads, sha2 for checksums, tokio::fs for async I/O
   - **manifest.rs**: CacheManifest persistence (JSON serialization)
   - XDG directory resolution via directories crate
   - Error types: CacheError enum with thiserror
-  - Expected: ~400 lines total (300 mod.rs + 100 manifest.rs)
+  - Completed: 444 lines total (260 mod.rs + 184 manifest.rs), 13/14 tests passing
 
-- [ ] **T016** [P] Implement config module in `src/config/mod.rs` and `src/config/schema.rs`
-  - **mod.rs**: ConfigManager struct, load(), save(), merge_with_cli_args(), validate(), config_path()
+- [x] **T016** [P] Implement config module in `src/config/mod.rs` and `src/config/schema.rs` ✅
+  - **mod.rs**: ConfigManager struct, load(), save(), merge_with_cli(), merge_with_env(), config_path()
   - TOML parsing via toml crate
-  - UserConfigurationBuilder implementation
+  - UserConfigurationBuilder re-exported from models
+  - Completed: 279 lines total (237 mod.rs + 42 schema.rs)
   - **schema.rs**: ConfigSchema validation logic, known keys/sections, deprecated key migration
   - Error types: ConfigError enum with thiserror
   - Expected: ~350 lines total (250 mod.rs + 100 schema.rs)

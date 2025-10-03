@@ -2,7 +2,7 @@
 //!
 //! Provides TOML-based configuration with defaults, CLI override, and env var support.
 
-use crate::models::{ConfigSchema, LogLevel, SafetyLevel, ShellType, UserConfiguration};
+use crate::models::{ConfigSchema, LogLevel, SafetyLevel, ShellType};
 use std::path::{Path, PathBuf};
 
 mod schema;

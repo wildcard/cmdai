@@ -33,5 +33,7 @@ pub mod safety;
 
 // Re-export commonly used types for convenience
 pub use models::{
-    BackendInfo, BackendType, CommandRequest, GeneratedCommand, RiskLevel, SafetyLevel, ShellType,
+    BackendInfo, BackendType, CacheManifest, CachedModel, CommandRequest, ConfigSchema,
+    ExecutionContext, GeneratedCommand, LogEntry, LogLevel, Platform, RiskLevel, SafetyLevel,
+    ShellType, UserConfiguration, UserConfigurationBuilder,
 };

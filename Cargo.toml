@@ -17,7 +17,7 @@ path = "src/main.rs"
 [dependencies]
 # Core CLI and async runtime
 clap = { version = "4.4", features = ["derive", "env", "color"] }
-tokio = { version = "1", features = ["rt-multi-thread", "macros", "time", "sync"] }
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "time", "sync", "fs"] }
 
 # Serialization and configuration
 serde = { version = "1", features = ["derive"] }
@@ -42,6 +42,7 @@ indicatif = "0.17"
 
 # Cross-platform support
 directories = "5"
+dirs = "5"
 which = "4.4"
 os_info = "3.7"
 sysinfo = "0.29"
@@ -56,6 +57,9 @@ chrono = { version = "0.4", features = ["serde"] }
 # Regex for safety validation
 regex = "1"
 once_cell = "1.19"
+
+# Cryptography for checksums
+sha2 = "0.10"
 
 # Async trait support
 async-trait = "0.1"

@@ -131,10 +131,10 @@
   - Validation rules
   - Expected: ~40 lines
 
-- [ ] **T014** Update `src/lib.rs` exports for infrastructure models
+- [x] **T014** Update `src/lib.rs` exports for infrastructure models ✅
   - Add pub use for all new types: Platform, LogLevel, CachedModel, CacheManifest, etc.
   - Organize under infrastructure module path
-  - Expected: ~10 lines
+  - Completed: 9 new exports added, library builds successfully
 
 **Verification Command**: `cargo build --lib`
 **Expected Result**: Compiles successfully, contract tests still fail (no implementation)

@@ -183,7 +183,7 @@ impl std::fmt::Display for RiskLevel {
     }
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum SafetyLevel {
     /// Blocks High and Critical commands, confirms Moderate
@@ -194,22 +194,25 @@ pub enum SafetyLevel {
     Permissive,
 }
 
-impl Default for SafetyLevel {
-    fn default() -> Self {
-        Self::Moderate
-    }
-}
-
 impl std::str::FromStr for SafetyLevel {
     type Err = String;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_lowercase().as_str() {
-            "strict" => Ok(Self::Strict),
-            "moderate" => Ok(Self::Moderate),
-            "permissive" => Ok(Self::Permissive),
-            _ => Err(format!("Invalid safety level: {}", s)),
+            "strict" => Ok(SafetyLevel::Strict),
+            "moderate" => Ok(SafetyLevel::Moderate),
+            "permissive" => Ok(SafetyLevel::Permissive),
+            _ => Err(format!(
+                "Invalid safety level '{}'. Valid values: strict, moderate, permissive",
+                s
+            )),
         }
+    }
+}
+
+impl Default for SafetyLevel {
+    fn default() -> Self {
+        Self::Moderate
     }
 }
 
@@ -390,3 +393,517 @@ impl BackendInfo {
 }
 
 // All types are public through mod.rs exports
+
+// ============================================================================
+// Infrastructure Models (Feature 003)
+// ============================================================================
+
+use chrono::{DateTime, Utc};
+use std::collections::HashMap;
+use std::path::PathBuf;
+
+/// Platform operating system type
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum Platform {
+    Linux,
+    MacOS,
+    Windows,
+}
+
+impl Platform {
+    /// Detect current platform at runtime
+    pub fn detect() -> Self {
+        #[cfg(target_os = "linux")]
+        return Platform::Linux;
+
+        #[cfg(target_os = "macos")]
+        return Platform::MacOS;
+
+        #[cfg(target_os = "windows")]
+        return Platform::Windows;
+
+        #[cfg(not(any(target_os = "linux", target_os = "macos", target_os = "windows")))]
+        compile_error!("Unsupported platform");
+    }
+
+    /// Check if platform is POSIX-compliant
+    pub fn is_posix(&self) -> bool {
+        matches!(self, Platform::Linux | Platform::MacOS)
+    }
+}
+
+impl std::fmt::Display for Platform {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Platform::Linux => write!(f, "Linux"),
+            Platform::MacOS => write!(f, "macOS"),
+            Platform::Windows => write!(f, "Windows"),
+        }
+    }
+}
+
+/// Log severity level
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
+#[serde(rename_all = "lowercase")]
+pub enum LogLevel {
+    Debug,
+    Info,
+    Warn,
+    Error,
+}
+
+impl LogLevel {
+    /// Convert to tracing Level
+    pub fn to_tracing_level(&self) -> tracing::Level {
+        match self {
+            LogLevel::Debug => tracing::Level::DEBUG,
+            LogLevel::Info => tracing::Level::INFO,
+            LogLevel::Warn => tracing::Level::WARN,
+            LogLevel::Error => tracing::Level::ERROR,
+        }
+    }
+}
+
+impl std::str::FromStr for LogLevel {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "debug" => Ok(LogLevel::Debug),
+            "info" => Ok(LogLevel::Info),
+            "warn" | "warning" => Ok(LogLevel::Warn),
+            "error" | "err" => Ok(LogLevel::Error),
+            _ => Err(format!(
+                "Invalid log level '{}'. Valid options: debug, info, warn, error",
+                s
+            )),
+        }
+    }
+}
+
+impl std::fmt::Display for LogLevel {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            LogLevel::Debug => write!(f, "DEBUG"),
+            LogLevel::Info => write!(f, "INFO"),
+            LogLevel::Warn => write!(f, "WARN"),
+            LogLevel::Error => write!(f, "ERROR"),
+        }
+    }
+}
+
+/// Cached model metadata
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CachedModel {
+    pub model_id: String,
+    pub path: PathBuf,
+    pub checksum: String,
+    pub size_bytes: u64,
+    pub downloaded_at: DateTime<Utc>,
+    pub last_accessed: DateTime<Utc>,
+    pub version: Option<String>,
+}
+
+impl CachedModel {
+    /// Validate cached model metadata
+    pub fn validate(&self) -> Result<(), String> {
+        if self.model_id.is_empty() {
+            return Err("Model ID cannot be empty".to_string());
+        }
+        if self.checksum.len() != 64 {
+            return Err(format!(
+                "Checksum must be 64 characters (SHA256 hex), got {}",
+                self.checksum.len()
+            ));
+        }
+        if !self.checksum.chars().all(|c| c.is_ascii_hexdigit()) {
+            return Err("Checksum must be valid hexadecimal".to_string());
+        }
+        Ok(())
+    }
+}
+
+/// Cache manifest tracking all cached models
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CacheManifest {
+    pub version: String,
+    pub models: HashMap<String, CachedModel>,
+    pub total_size_bytes: u64,
+    pub max_cache_size_bytes: u64,
+    pub last_updated: DateTime<Utc>,
+}
+
+impl CacheManifest {
+    /// Create a new empty manifest
+    pub fn new(max_size_gb: u64) -> Self {
+        Self {
+            version: "1.0.0".to_string(),
+            models: HashMap::new(),
+            total_size_bytes: 0,
+            max_cache_size_bytes: max_size_gb * 1024 * 1024 * 1024,
+            last_updated: Utc::now(),
+        }
+    }
+
+    /// Add a model to the manifest
+    pub fn add_model(&mut self, model: CachedModel) {
+        self.total_size_bytes += model.size_bytes;
+        self.models.insert(model.model_id.clone(), model);
+        self.last_updated = Utc::now();
+    }
+
+    /// Remove a model from the manifest
+    pub fn remove_model(&mut self, model_id: &str) -> Option<CachedModel> {
+        if let Some(model) = self.models.remove(model_id) {
+            self.total_size_bytes = self.total_size_bytes.saturating_sub(model.size_bytes);
+            self.last_updated = Utc::now();
+            Some(model)
+        } else {
+            None
+        }
+    }
+
+    /// Get a model from the manifest
+    pub fn get_model(&self, model_id: &str) -> Option<&CachedModel> {
+        self.models.get(model_id)
+    }
+
+    /// Clean up least-recently-used models if over size limit
+    pub fn cleanup_lru(&mut self) -> Vec<String> {
+        let mut removed = Vec::new();
+
+        while self.total_size_bytes > self.max_cache_size_bytes && !self.models.is_empty() {
+            // Find LRU model
+            let lru_model_id = self
+                .models
+                .iter()
+                .min_by_key(|(_, model)| model.last_accessed)
+                .map(|(id, _)| id.clone());
+
+            if let Some(model_id) = lru_model_id {
+                self.remove_model(&model_id);
+                removed.push(model_id);
+            } else {
+                break;
+            }
+        }
+
+        removed
+    }
+
+    /// Validate integrity of all models
+    pub fn validate_integrity(&self) -> (Vec<String>, Vec<String>, Vec<String>) {
+        let mut valid = Vec::new();
+        let mut corrupted = Vec::new();
+        let mut missing = Vec::new();
+
+        for (model_id, model) in &self.models {
+            if !model.path.exists() {
+                missing.push(model_id.clone());
+            } else if model.validate().is_err() {
+                corrupted.push(model_id.clone());
+            } else {
+                valid.push(model_id.clone());
+            }
+        }
+
+        (valid, corrupted, missing)
+    }
+}
+
+/// User configuration with preferences
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct UserConfiguration {
+    pub default_shell: Option<ShellType>,
+    pub safety_level: SafetyLevel,
+    pub default_model: Option<String>,
+    pub log_level: LogLevel,
+    pub cache_max_size_gb: u64,
+    pub log_rotation_days: u32,
+}
+
+impl Default for UserConfiguration {
+    fn default() -> Self {
+        Self {
+            default_shell: None, // Auto-detect
+            safety_level: SafetyLevel::Moderate,
+            default_model: None,
+            log_level: LogLevel::Info,
+            cache_max_size_gb: 10,
+            log_rotation_days: 7,
+        }
+    }
+}
+
+impl UserConfiguration {
+    /// Create a builder for UserConfiguration
+    pub fn builder() -> UserConfigurationBuilder {
+        UserConfigurationBuilder::new()
+    }
+
+    /// Validate configuration values
+    pub fn validate(&self) -> Result<(), String> {
+        if self.cache_max_size_gb < 1 || self.cache_max_size_gb > 1000 {
+            return Err(format!(
+                "cache_max_size_gb must be between 1 and 1000, got {}",
+                self.cache_max_size_gb
+            ));
+        }
+        if self.log_rotation_days < 1 || self.log_rotation_days > 365 {
+            return Err(format!(
+                "log_rotation_days must be between 1 and 365, got {}",
+                self.log_rotation_days
+            ));
+        }
+        Ok(())
+    }
+}
+
+/// Builder for UserConfiguration
+pub struct UserConfigurationBuilder {
+    default_shell: Option<ShellType>,
+    safety_level: SafetyLevel,
+    default_model: Option<String>,
+    log_level: LogLevel,
+    cache_max_size_gb: u64,
+    log_rotation_days: u32,
+}
+
+impl Default for UserConfigurationBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl UserConfigurationBuilder {
+    pub fn new() -> Self {
+        let defaults = UserConfiguration::default();
+        Self {
+            default_shell: defaults.default_shell,
+            safety_level: defaults.safety_level,
+            default_model: defaults.default_model,
+            log_level: defaults.log_level,
+            cache_max_size_gb: defaults.cache_max_size_gb,
+            log_rotation_days: defaults.log_rotation_days,
+        }
+    }
+
+    pub fn default_shell(mut self, shell: ShellType) -> Self {
+        self.default_shell = Some(shell);
+        self
+    }
+
+    pub fn safety_level(mut self, level: SafetyLevel) -> Self {
+        self.safety_level = level;
+        self
+    }
+
+    pub fn default_model(mut self, model: impl Into<String>) -> Self {
+        self.default_model = Some(model.into());
+        self
+    }
+
+    pub fn log_level(mut self, level: LogLevel) -> Self {
+        self.log_level = level;
+        self
+    }
+
+    pub fn cache_max_size_gb(mut self, size: u64) -> Self {
+        self.cache_max_size_gb = size;
+        self
+    }
+
+    pub fn log_rotation_days(mut self, days: u32) -> Self {
+        self.log_rotation_days = days;
+        self
+    }
+
+    pub fn build(self) -> Result<UserConfiguration, String> {
+        let config = UserConfiguration {
+            default_shell: self.default_shell,
+            safety_level: self.safety_level,
+            default_model: self.default_model,
+            log_level: self.log_level,
+            cache_max_size_gb: self.cache_max_size_gb,
+            log_rotation_days: self.log_rotation_days,
+        };
+        config.validate()?;
+        Ok(config)
+    }
+}
+
+/// Configuration schema for validation
+pub struct ConfigSchema {
+    pub known_sections: Vec<String>,
+    pub known_keys: HashMap<String, String>,
+    pub deprecated_keys: HashMap<String, String>,
+}
+
+impl ConfigSchema {
+    pub fn new() -> Self {
+        let mut known_keys = HashMap::new();
+        known_keys.insert(
+            "general.safety_level".to_string(),
+            "SafetyLevel enum".to_string(),
+        );
+        known_keys.insert(
+            "general.default_shell".to_string(),
+            "ShellType enum".to_string(),
+        );
+        known_keys.insert("general.default_model".to_string(), "String".to_string());
+        known_keys.insert("logging.log_level".to_string(), "LogLevel enum".to_string());
+        known_keys.insert("logging.log_rotation_days".to_string(), "u32".to_string());
+        known_keys.insert("cache.max_size_gb".to_string(), "u64".to_string());
+
+        Self {
+            known_sections: vec![
+                "general".to_string(),
+                "logging".to_string(),
+                "cache".to_string(),
+            ],
+            known_keys,
+            deprecated_keys: HashMap::new(),
+        }
+    }
+
+    pub fn validate(&self, _config: &UserConfiguration) -> Result<(), String> {
+        // Validation is done in UserConfiguration::validate()
+        Ok(())
+    }
+}
+
+/// Execution context captured at runtime
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ExecutionContext {
+    pub current_dir: PathBuf,
+    pub shell_type: ShellType,
+    pub platform: Platform,
+    pub environment_vars: HashMap<String, String>,
+    pub username: String,
+    pub hostname: String,
+    pub captured_at: DateTime<Utc>,
+}
+
+impl ExecutionContext {
+    /// Create new execution context with custom values
+    pub fn new(
+        current_dir: PathBuf,
+        shell_type: ShellType,
+        platform: Platform,
+    ) -> Result<Self, String> {
+        if !current_dir.is_absolute() {
+            return Err("Current directory must be absolute path".to_string());
+        }
+
+        // Capture and filter environment variables
+        let environment_vars = Self::filter_env_vars();
+
+        Ok(Self {
+            current_dir,
+            shell_type,
+            platform,
+            environment_vars,
+            username: std::env::var("USER")
+                .or_else(|_| std::env::var("USERNAME"))
+                .unwrap_or_else(|_| "unknown".to_string()),
+            hostname: std::env::var("HOSTNAME")
+                .or_else(|_| std::env::var("COMPUTERNAME"))
+                .unwrap_or_else(|_| "unknown".to_string()),
+            captured_at: Utc::now(),
+        })
+    }
+
+    /// Filter environment variables to exclude sensitive data
+    fn filter_env_vars() -> HashMap<String, String> {
+        let sensitive_patterns = [
+            "API_KEY",
+            "TOKEN",
+            "SECRET",
+            "PASSWORD",
+            "PASSWD",
+            "CREDENTIAL",
+            "AUTH",
+            "PRIVATE",
+            "KEY",
+        ];
+
+        std::env::vars()
+            .filter(|(key, value)| {
+                // Filter out sensitive variables and empty values
+                !key.is_empty()
+                    && !value.is_empty()
+                    && !sensitive_patterns
+                        .iter()
+                        .any(|pattern| key.to_uppercase().contains(pattern))
+            })
+            .collect()
+    }
+
+    /// Serialize context for LLM prompt
+    pub fn to_prompt_context(&self) -> String {
+        format!(
+            "Current directory: {}\nShell: {}\nPlatform: {}\nUser: {}@{}",
+            self.current_dir.display(),
+            self.shell_type,
+            self.platform,
+            self.username,
+            self.hostname
+        )
+    }
+
+    /// Check if environment variable exists
+    pub fn has_env_var(&self, key: &str) -> bool {
+        self.environment_vars.contains_key(key)
+    }
+
+    /// Get environment variable value
+    pub fn get_env_var(&self, key: &str) -> Option<&str> {
+        self.environment_vars.get(key).map(|s| s.as_str())
+    }
+}
+
+/// Structured log entry
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LogEntry {
+    pub timestamp: DateTime<Utc>,
+    pub level: LogLevel,
+    pub target: String,
+    pub message: String,
+    pub operation_id: Option<String>,
+    pub metadata: HashMap<String, serde_json::Value>,
+    pub duration_ms: Option<u64>,
+}
+
+impl LogEntry {
+    /// Create a new log entry
+    pub fn new(level: LogLevel, target: impl Into<String>, message: impl Into<String>) -> Self {
+        Self {
+            timestamp: Utc::now(),
+            level,
+            target: target.into(),
+            message: message.into(),
+            operation_id: None,
+            metadata: HashMap::new(),
+            duration_ms: None,
+        }
+    }
+
+    /// Add metadata field
+    pub fn with_metadata(mut self, key: impl Into<String>, value: serde_json::Value) -> Self {
+        self.metadata.insert(key.into(), value);
+        self
+    }
+
+    /// Set operation ID
+    pub fn with_operation_id(mut self, id: impl Into<String>) -> Self {
+        self.operation_id = Some(id.into());
+        self
+    }
+
+    /// Set duration
+    pub fn with_duration(mut self, duration_ms: u64) -> Self {
+        self.duration_ms = Some(duration_ms);
+        self
+    }
+}

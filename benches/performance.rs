@@ -2,7 +2,6 @@
 // Benchmarks validate performance requirements across all components
 
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
-use std::time::Duration;
 
 // Import system components for benchmarking
 use cmdai::{

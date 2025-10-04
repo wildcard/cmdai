@@ -58,6 +58,11 @@ Safety module provides:
 
 ## Development Commands
 
+> !IMPORTANT: 
+> Before running `cargo` or any rust development command in the shell, check the the command is installed with `which` and inspect the `$PATH` for the relevant bin. 
+
+> If it doesn't run `. "$HOME/.cargo/env"` in your shell before command execution
+
 ### Building & Testing
 ```bash
 # Build the project

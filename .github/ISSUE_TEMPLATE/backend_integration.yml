@@ -1,0 +1,370 @@
+name: Backend Integration
+description: Propose integration of a new LLM backend or improvements to existing backends
+title: "[Backend]: "
+labels: ["backend", "enhancement", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for proposing a backend integration! Backends enable cmdai to use different LLM inference engines.
+
+        **What qualifies as a backend?**
+        - Local inference engines (Ollama, llama.cpp, MLX)
+        - Remote inference APIs (vLLM, Text Generation Inference, OpenAI-compatible)
+        - Cloud services with local caching (Hugging Face Inference API)
+
+        **Before submitting:**
+        - Review existing backends in `src/backends/`
+        - Check the `CommandGenerator` trait in `src/backends/mod.rs`
+        - Search for existing [backend-related issues](https://github.com/wildcard/cmdai/labels/backend)
+
+  - type: dropdown
+    id: backend-type
+    attributes:
+      label: Backend Type
+      description: What type of backend are you proposing?
+      options:
+        - Local inference engine (runs on user's machine)
+        - Remote API (HTTP-based inference server)
+        - Hybrid (local caching with remote fallback)
+        - Enhancement to existing backend
+        - Other (specify in description)
+    validations:
+      required: true
+
+  - type: input
+    id: backend-name
+    attributes:
+      label: Backend Name
+      description: Name of the backend or inference engine
+      placeholder: "Candle (Rust ML framework), llama.cpp, Anthropic Claude API"
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Backend Description
+      description: What is this backend? What makes it unique or valuable for cmdai?
+      placeholder: |
+        **Candle** is a minimalist ML framework for Rust, designed for fast inference
+        on CPU and GPU. Key benefits for cmdai:
+
+        - Pure Rust implementation (no Python/C++ dependencies)
+        - Excellent performance on consumer hardware
+        - Built-in GGUF support for quantized models
+        - Cross-platform (Linux, macOS, Windows)
+        - Small binary size impact (~5MB)
+
+        Official repo: https://github.com/huggingface/candle
+    validations:
+      required: true
+
+  - type: dropdown
+    id: existing-backend
+    attributes:
+      label: Is this an enhancement to an existing backend?
+      description: Or are you proposing a completely new backend?
+      options:
+        - New backend (not currently in cmdai)
+        - Enhancement to MLX backend
+        - Enhancement to vLLM backend
+        - Enhancement to Ollama backend
+        - Enhancement to Mock backend
+    validations:
+      required: true
+
+  - type: textarea
+    id: implementation-approach
+    attributes:
+      label: Implementation Approach
+      description: How would this backend be implemented? High-level technical approach.
+      placeholder: |
+        **Implementation plan**:
+
+        1. **Create `src/backends/candle.rs`**:
+           - Implement `CommandGenerator` trait
+           - Use `candle-core` for model loading
+           - Support GGUF quantized models
+
+        2. **Add HTTP server support** (for remote mode):
+           - Use `axum` or `actix-web` for REST API
+           - Implement OpenAI-compatible endpoints
+           - Support streaming responses
+
+        3. **Model loading**:
+           - Load from Hugging Face Hub (GGUF files)
+           - Cache models in `~/.cache/cmdai/models/`
+           - Auto-detect optimal quantization level
+
+        4. **Inference**:
+           - Use system prompt from `src/prompts/`
+           - Generate commands with temperature=0.7
+           - Parse JSON responses with fallback strategies
+    validations:
+      required: true
+
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Dependencies Required
+      description: What Rust crates or external tools are needed?
+      placeholder: |
+        **Rust crates**:
+        ```toml
+        candle-core = "0.4"
+        candle-transformers = "0.4"
+        candle-nn = "0.4"
+        hf-hub = "0.3"  # Already used by cmdai
+        ```
+
+        **External dependencies**:
+        - None (pure Rust)
+        - Optional: CUDA toolkit for GPU acceleration
+        - Optional: Metal SDK on macOS (already present)
+
+        **Binary size impact**:
+        - Estimated +5-7MB to release binary
+        - Acceptable for the performance benefits
+    validations:
+      required: true
+
+  - type: dropdown
+    id: platform-support
+    attributes:
+      label: Platform Support
+      description: Which platforms does this backend support?
+      multiple: true
+      options:
+        - macOS (Apple Silicon)
+        - macOS (Intel)
+        - Linux (x86_64)
+        - Linux (ARM64)
+        - Windows 10/11
+        - Other (specify in description)
+    validations:
+      required: true
+
+  - type: textarea
+    id: platform-notes
+    attributes:
+      label: Platform-Specific Notes
+      description: Any platform-specific considerations, limitations, or optimizations?
+      placeholder: |
+        **macOS (Apple Silicon)**:
+        - Use Metal backend for GPU acceleration
+        - Excellent performance on M1/M2/M3 chips
+        - Binary size: ~48MB with Metal support
+
+        **Linux**:
+        - CUDA support optional (feature flag)
+        - CPU-only mode works everywhere
+        - AVX2 required for optimal performance
+
+        **Windows**:
+        - Requires Visual Studio Build Tools
+        - CUDA support via feature flag
+        - Limited testing on ARM64 Windows
+    validations:
+      required: false
+
+  - type: textarea
+    id: testing-strategy
+    attributes:
+      label: Testing Strategy
+      description: How should this backend be tested?
+      placeholder: |
+        **Contract tests** (`tests/contract/candle_contract.rs`):
+        - Implement `CommandGenerator` trait correctly
+        - Handle errors gracefully (model not found, OOM)
+        - Parse responses with multiple fallback strategies
+
+        **Integration tests** (`tests/integration/candle_integration.rs`):
+        - Download and cache a small model (e.g., Qwen2.5-0.5B)
+        - Generate commands for sample prompts
+        - Validate output format and safety
+
+        **Performance tests** (`benches/candle_performance.rs`):
+        - Startup time < 100ms
+        - First inference < 2s on M1 Mac
+        - Memory usage < 2GB for 0.5B parameter model
+
+        **Platform tests**:
+        - CI/CD tests on Linux (x86_64)
+        - Manual testing on macOS (Apple Silicon)
+        - Community testing on Windows
+    validations:
+      required: true
+
+  - type: textarea
+    id: performance
+    attributes:
+      label: Expected Performance
+      description: What performance characteristics does this backend have?
+      placeholder: |
+        **Startup time**: < 50ms (model loading is lazy)
+        **First inference**: 1.5s on M1 Mac with Qwen2.5-0.5B-Q4
+        **Subsequent inference**: 0.8s (model already loaded)
+        **Memory usage**: ~1.2GB for 0.5B model, ~4GB for 3B model
+        **Binary size**: +6MB to release build
+
+        **Compared to MLX backend**:
+        - Similar inference speed (both use Metal)
+        - Faster startup (no Python overhead)
+        - Lower memory usage (Rust's efficiency)
+        - Better error handling (type-safe)
+    validations:
+      required: false
+
+  - type: textarea
+    id: configuration
+    attributes:
+      label: Configuration
+      description: What configuration options would this backend expose?
+      placeholder: |
+        **In `~/.config/cmdai/config.toml`**:
+
+        ```toml
+        [backends.candle]
+        enabled = true
+        model_id = "Qwen/Qwen2.5-0.5B-Instruct-GGUF"
+        model_file = "qwen2.5-0.5b-instruct-q4_k_m.gguf"
+        device = "auto"  # auto, cpu, cuda, metal
+        quantization = "q4_k_m"  # q4_0, q4_k_m, q8_0, f16
+        context_length = 2048
+        temperature = 0.7
+        top_p = 0.9
+        ```
+
+        **CLI flags**:
+        ```bash
+        cmdai --backend candle --model Qwen2.5-0.5B-GGUF "list files"
+        ```
+    validations:
+      required: false
+
+  - type: textarea
+    id: error-handling
+    attributes:
+      label: Error Handling
+      description: What errors might occur and how should they be handled?
+      placeholder: |
+        **Error scenarios**:
+
+        1. **Model not found on Hugging Face**:
+           ```
+           Error: Model 'invalid/model-id' not found on Hugging Face Hub
+           Suggestion: Check model ID and ensure it exists
+           ```
+
+        2. **Out of memory during inference**:
+           ```
+           Error: Insufficient memory for model inference (requires 4GB, only 2GB available)
+           Suggestion: Use a smaller model or enable quantization
+           ```
+
+        3. **Device not available** (GPU requested but not present):
+           ```
+           Warning: CUDA device not found, falling back to CPU
+           Info: Inference may be slower on CPU
+           ```
+
+        4. **Invalid model format**:
+           ```
+           Error: Model file is not a valid GGUF format
+           Suggestion: Re-download the model or check file integrity
+           ```
+    validations:
+      required: false
+
+  - type: textarea
+    id: documentation
+    attributes:
+      label: Documentation Needs
+      description: What documentation should accompany this backend?
+      placeholder: |
+        **User documentation**:
+        - Installation guide for Candle backend
+        - Model selection guide (which models work best)
+        - Configuration examples
+        - Troubleshooting common issues
+
+        **Developer documentation**:
+        - Architecture overview in `specs/backends/candle/`
+        - API contract in `specs/backends/candle/contracts/`
+        - Integration tests walkthrough
+        - Performance benchmarking guide
+
+        **Quickstart additions**:
+        - Add Candle example to main README
+        - Create `specs/backends/candle/quickstart.md`
+    validations:
+      required: false
+
+  - type: dropdown
+    id: contribution
+    attributes:
+      label: Contribution
+      description: Can you help implement this backend?
+      options:
+        - Yes, I can implement this backend myself
+        - Yes, I can help with implementation (guidance needed)
+        - Yes, I can help with testing on specific platforms
+        - Yes, I can help with documentation
+        - No, but I can provide feedback on PRs
+        - No, requesting implementation by maintainers
+    validations:
+      required: true
+
+  - type: textarea
+    id: timeline
+    attributes:
+      label: Proposed Timeline
+      description: If implementing yourself, what's your estimated timeline?
+      placeholder: |
+        **Week 1**: Basic Candle integration with CPU support
+        **Week 2**: Add Metal backend for macOS, GPU acceleration
+        **Week 3**: Contract tests and integration tests
+        **Week 4**: Documentation, benchmarks, and PR submission
+
+        I can commit ~10 hours per week to this implementation.
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Context
+      description: |
+        Any other context:
+        - Links to backend documentation
+        - Example code or proof-of-concept
+        - Performance benchmarks
+        - Community interest or demand
+      placeholder: |
+        **Proof of concept**:
+        I've created a minimal Candle integration in a branch:
+        https://github.com/my-username/cmdai/tree/candle-backend
+
+        **Performance benchmarks**:
+        Candle vs MLX on M1 Mac (Qwen2.5-0.5B):
+        - Candle: 1.5s first inference, 0.8s subsequent
+        - MLX: 1.8s first inference, 1.0s subsequent
+
+        **Community interest**:
+        Several users have requested Candle support in Discussions #42
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Pre-submission Checklist
+      description: Please confirm the following before submitting
+      options:
+        - label: I have reviewed the `CommandGenerator` trait in `src/backends/mod.rs`
+          required: true
+        - label: I have checked for existing issues about this backend
+          required: true
+        - label: I have considered platform support and testing requirements
+          required: true
+        - label: This backend aligns with cmdai's goals (safety, performance, local-first)
+          required: true

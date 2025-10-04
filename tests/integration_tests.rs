@@ -11,6 +11,7 @@ use cmdai::{
 };
 
 /// Test data for integration scenarios
+#[allow(dead_code)]
 struct IntegrationTestCase {
     name: &'static str,
     prompt: &'static str,
@@ -138,7 +139,7 @@ async fn test_backend_safety_integration() {
     // 1. Generate command via backend
     // 2. Validate via safety system
     // 3. Return integrated result
-    assert!(true, "Integration test structure is valid");
+    // Integration test structure validated
 }
 
 #[tokio::test]
@@ -340,13 +341,11 @@ async fn test_concurrent_operations_integration() {
 
                 // For now, just test the concurrent structure
                 let validator = SafetyValidator::new(SafetyConfig::moderate());
-                if validator.is_ok() {
-                    let v = validator.unwrap();
+                if let Ok(v) = validator {
                     let result = v.validate_command(prompt, ShellType::Bash).await;
 
                     // Should handle concurrent validation
-                    if result.is_ok() {
-                        let validation = result.unwrap();
+                    if let Ok(validation) = result {
                         assert!(
                             validation.risk_level <= RiskLevel::Moderate,
                             "Safe commands should not be high risk"

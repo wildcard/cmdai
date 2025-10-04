@@ -24,7 +24,7 @@ async fn test_cli_error_handling() {
         Err(CliError::NotImplemented) => {
             // Expected during TDD phase
             println!("CLI not implemented yet, which is expected");
-            assert!(true, "NotImplemented error is expected during TDD");
+            // NotImplemented error is expected during TDD
         }
         Err(other_error) => {
             // Should have meaningful error message
@@ -42,8 +42,10 @@ async fn test_safety_validator_error_handling() {
     // ERROR HANDLING: Safety validator should handle all input gracefully
 
     // Test invalid configuration
-    let mut invalid_config = SafetyConfig::default();
-    invalid_config.max_command_length = 0; // Invalid
+    let invalid_config = SafetyConfig {
+        max_command_length: 0, // Invalid
+        ..Default::default()
+    };
 
     let validator_result = SafetyValidator::new(invalid_config);
     match validator_result {
@@ -146,7 +148,7 @@ async fn test_timeout_error_handling() {
             Err(_timeout_error) => {
                 // Timeout occurred - system should handle this gracefully
                 println!("Timeout occurred, system should handle this gracefully");
-                assert!(true, "Timeout handling is expected");
+                // Timeout handling is expected
             }
         }
     }
@@ -166,8 +168,7 @@ async fn test_resource_exhaustion_handling() {
             .iter()
             .map(|cmd| async move {
                 let validator = SafetyValidator::new(SafetyConfig::moderate());
-                if validator.is_ok() {
-                    let v = validator.unwrap();
+                if let Ok(v) = validator {
                     v.validate_command(cmd, ShellType::Bash).await
                 } else {
                     Err(ValidationError::NotImplemented)

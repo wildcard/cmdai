@@ -2,12 +2,10 @@
 // These tests document expected behavior from quickstart.md and README examples
 // They MUST FAIL initially until full backend integration is complete
 
-use cmdai::{
-    cli::{CliApp, IntoCliArgs},
-    models::{RiskLevel, SafetyLevel, ShellType},
-};
+use cmdai::cli::{CliApp, IntoCliArgs};
 
 /// Mock CLI arguments for testing
+#[derive(Default)]
 struct TestArgs {
     prompt: Option<String>,
     shell: Option<String>,
@@ -16,20 +14,6 @@ struct TestArgs {
     confirm: bool,
     verbose: bool,
     config_file: Option<String>,
-}
-
-impl Default for TestArgs {
-    fn default() -> Self {
-        Self {
-            prompt: None,
-            shell: None,
-            safety: None,
-            output: None,
-            confirm: false,
-            verbose: false,
-            config_file: None,
-        }
-    }
 }
 
 impl IntoCliArgs for TestArgs {

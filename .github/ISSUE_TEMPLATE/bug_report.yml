@@ -1,0 +1,178 @@
+name: Bug Report
+description: Report a bug or unexpected behavior in cmdai
+title: "[Bug]: "
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for reporting a bug! Please provide as much detail as possible to help us reproduce and fix the issue.
+
+        **Before submitting:**
+        - Search existing issues to avoid duplicates
+        - Ensure you're using the latest version of cmdai
+        - For security vulnerabilities, use [private security advisories](https://github.com/wildcard/cmdai/security/advisories/new) instead
+
+  - type: input
+    id: cmdai-version
+    attributes:
+      label: cmdai Version
+      description: Run `cmdai --version` to get the version
+      placeholder: "v0.1.0"
+    validations:
+      required: true
+
+  - type: input
+    id: rust-version
+    attributes:
+      label: Rust Version
+      description: Run `rustc --version` to get the Rust version
+      placeholder: "rustc 1.75.0 (2024-01-15)"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating System
+      description: Which OS are you running cmdai on?
+      options:
+        - macOS (Apple Silicon)
+        - macOS (Intel)
+        - Linux (Ubuntu/Debian)
+        - Linux (Fedora/RHEL)
+        - Linux (Arch)
+        - Linux (Other)
+        - Windows 10
+        - Windows 11
+        - Other (specify in description)
+    validations:
+      required: true
+
+  - type: input
+    id: os-version
+    attributes:
+      label: OS Version
+      description: Specific OS version (e.g., macOS 14.5, Ubuntu 22.04)
+      placeholder: "macOS 14.5"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: backend
+    attributes:
+      label: Backend
+      description: Which LLM backend were you using?
+      options:
+        - Mock (default for testing)
+        - MLX (Apple Silicon)
+        - vLLM (remote)
+        - Ollama (local)
+        - Other (specify in description)
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      description: Clear and concise description of what went wrong
+      placeholder: |
+        When I run cmdai with the prompt "list files", it crashes with a panic instead of generating a command.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: What did you expect to happen?
+      placeholder: |
+        cmdai should generate a safe shell command like `ls -la` or `find . -type f`
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual Behavior
+      description: What actually happened?
+      placeholder: |
+        cmdai panicked with:
+        thread 'main' panicked at 'called `Result::unwrap()` on an `Err` value: ModelNotFound'
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to Reproduce
+      description: Detailed steps to reproduce the bug
+      placeholder: |
+        1. Install cmdai v0.1.0
+        2. Run `cmdai "list files"`
+        3. Observe crash
+      value: |
+        1.
+        2.
+        3.
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Debug Logs
+      description: |
+        Run cmdai with `RUST_LOG=debug cmdai "your prompt"` and paste relevant logs.
+        **Tip:** Logs will be formatted as code automatically, no need for backticks.
+      placeholder: |
+        RUST_LOG=debug cmdai "list files"
+
+        [2025-10-03T10:30:45Z DEBUG cmdai::backends] Initializing mock backend
+        [2025-10-03T10:30:45Z ERROR cmdai::cache] Failed to load model: ModelNotFound
+        thread 'main' panicked at 'called `Result::unwrap()` on an `Err` value: ModelNotFound("test-model")'
+      render: shell
+
+  - type: textarea
+    id: config
+    attributes:
+      label: Configuration
+      description: |
+        If relevant, paste your `~/.config/cmdai/config.toml` (remove any sensitive information like API keys)
+      placeholder: |
+        [general]
+        backend = "mock"
+        auto_execute = false
+
+        [safety]
+        strict_mode = true
+      render: toml
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Context
+      description: |
+        Any other context about the problem:
+        - Environment variables
+        - Shell type (bash, zsh, fish)
+        - Recent configuration changes
+        - Screenshots (if applicable)
+      placeholder: |
+        I'm using zsh with Oh My Zsh. The issue started after upgrading from v0.0.9.
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Pre-submission Checklist
+      description: Please confirm the following before submitting
+      options:
+        - label: I have searched existing issues to avoid duplicates
+          required: true
+        - label: I am using the latest version of cmdai (or specified which version has the bug)
+          required: true
+        - label: I have included debug logs (`RUST_LOG=debug` output)
+          required: false
+        - label: This is not a security vulnerability (if it is, I will use [private disclosure](https://github.com/wildcard/cmdai/security/advisories/new))
+          required: true
